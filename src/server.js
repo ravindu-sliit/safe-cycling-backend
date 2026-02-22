@@ -9,9 +9,15 @@ dotenv.config();
 // Initialize express app
 const app = express();
 
+// Import the routes
+const routeRoutes = require('./routes/routeRoutes');
+
 // Middleware to parse JSON and enable CORS
 app.use(express.json());
 app.use(cors());
+
+// Mount the routes
+app.use('/api/routes', routeRoutes);
 
 // Connect to MongoDB 
 // (Commented out until you add your real URI to the .env file)
