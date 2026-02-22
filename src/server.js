@@ -15,7 +15,7 @@ app.use(cors());
 
 // Connect to MongoDB 
 // (Commented out until you add your real URI to the .env file)
-// connectDB(); 
+connectDB(); 
 
 // A simple test route
 app.get('/', (req, res) => {
