@@ -11,6 +11,8 @@ const app = express();
 // Import the routes
 const routeRoutes = require('./routes/routeRoutes');
 
+const userRoutes = require('./routes/userRoutes');
+
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 
@@ -21,6 +23,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount the routes
 app.use('/api/routes', routeRoutes);
+
+app.use('/api/users', userRoutes);
 
 // Connect to MongoDB 
 // (Commented out until you add your real URI to the .env file)
