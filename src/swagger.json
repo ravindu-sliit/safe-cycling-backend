@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Safe Cycling Route Mapping API",
+    "title": "User Management API",
     "version": "1.0.0",
-    "description": "API documentation for the Eco-friendly Community-led platform."
+    "description": "API documentation for the User component."
   },
   "servers": [
     {
@@ -12,106 +12,6 @@
     }
   ],
   "paths": {
-    "/api/routes": {
-      "get": {
-        "summary": "Get all cycling routes",
-        "tags": ["Routes"],
-        "responses": {
-          "200": {
-            "description": "A list of cycling routes",
-            "content": {
-              "application/json": {
-                "example": {
-                  "success": true,
-                  "count": 1,
-                  "data": [
-                    {
-                      "_id": "65d1a1b2c3d4e5f6g7h8i9j0",
-                      "title": "Colombo City Eco-Trail",
-                      "startLocation": "Viharamahadevi Park",
-                      "endLocation": "Galle Face Green",
-                      "distance": 3.5,
-                      "ecoScore": 8
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create a new cycling route",
-        "tags": ["Routes"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RouteInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Route created successfully"
-          }
-        }
-      }
-    },
-    "/api/routes/{id}": {
-      "put": {
-        "summary": "Update an existing route",
-        "tags": ["Routes"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The route ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RouteInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Route updated successfully"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a route",
-        "tags": ["Routes"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The route ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Route deleted successfully"
-          }
-        }
-      }
-    },
     "/api/users": {
       "post": {
         "summary": "Create a new user profile",
@@ -220,17 +120,6 @@
   },
   "components": {
     "schemas": {
-      "RouteInput": {
-        "type": "object",
-        "required": ["title", "startLocation", "endLocation", "distance", "ecoScore"],
-        "properties": {
-          "title": { "type": "string", "example": "Colombo City Eco-Trail" },
-          "startLocation": { "type": "string", "example": "Viharamahadevi Park" },
-          "endLocation": { "type": "string", "example": "Galle Face Green" },
-          "distance": { "type": "number", "example": 3.5 },
-          "ecoScore": { "type": "number", "example": 8 }
-        }
-      },
       "UserInput": {
         "type": "object",
         "required": ["name", "email", "password"],
