@@ -113,6 +113,34 @@
       }
     },
     "/api/users": {
+      "get": {
+        "summary": "Get all users",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "A list of all users",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 1,
+                  "data": [
+                    {
+                      "_id": "699d2bc156ad784c44031635",
+                      "name": "Binoth Kulangana",
+                      "email": "binoth@test.com",
+                      "role": "user",
+                      "cyclingStyle": "commuter",
+                      "createdAt": "2026-02-24T04:40:33.397Z",
+                      "updatedAt": "2026-02-24T04:40:33.397Z"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Create a new user profile",
         "tags": ["Users"],
@@ -229,6 +257,9 @@
               "application/json": {
                 "schema": {
                   "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HazardReport"
+                  }
                   "items": { "$ref": "#/components/schemas/HazardReport" }
                 }
               }
@@ -244,12 +275,17 @@
           "required": true,
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HazardReportInput"
+              }
               "schema": { "$ref": "#/components/schemas/HazardReportInput" }
             }
           }
         },
         "responses": {
           "201": {
+            "description": "Hazard report created"
+          }
             "description": "Hazard report created",
             "content": {
               "application/json": {
@@ -264,6 +300,16 @@
     "/api/hazards/{id}": {
       "get": {
         "summary": "Get a hazard report by ID",
+        "tags": ["Hazards"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         "operationId": "getHazardById",
         "tags": ["Hazards"],
         "parameters": [
@@ -274,6 +320,29 @@
             "description": "Hazard report",
             "content": {
               "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HazardReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
                 "schema": { "$ref": "#/components/schemas/HazardReport" }
               }
             }
@@ -292,12 +361,20 @@
           "required": true,
           "content": {
             "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HazardReportInput"
+              }
               "schema": { "$ref": "#/components/schemas/HazardReportInput" }
             }
           }
         },
         "responses": {
           "200": {
+            "description": "Hazard report updated"
+          },
+          "404": {
+            "description": "Not found"
+          }
             "description": "Hazard report updated",
             "content": {
               "application/json": {
@@ -311,6 +388,24 @@
       },
       "delete": {
         "summary": "Delete a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Hazard report deleted"
+          },
+          "404": {
+            "description": "Not found"
+          }
         "operationId": "deleteHazard",
         "tags": ["Hazards"],
         "parameters": [
@@ -327,13 +422,13 @@
     "schemas": {
       "RouteInput": {
         "type": "object",
-        "required": ["title", "startLocation", "endLocation", "distance", "ecoScore"],
+        "required": ["title", "startLocation", "endLocation", "distance"],
         "properties": {
-          "title": { "type": "string", "example": "Colombo City Eco-Trail" },
-          "startLocation": { "type": "string", "example": "Viharamahadevi Park" },
-          "endLocation": { "type": "string", "example": "Galle Face Green" },
-          "distance": { "type": "number", "example": 3.5 },
-          "ecoScore": { "type": "number", "example": 8 }
+          "title": { "type": "string", "example": "Coastal Breeze Path" },
+          "startLocation": { "type": "string", "example": "Mt. Lavinia" },
+          "endLocation": { "type": "string", "example": "Galle Face" },
+          "distance": { "type": "number", "example": 10.5 },
+          "ecoScore": { "type": "integer", "example": 9 }
         }
       },
       "UserInput": {
@@ -378,6 +473,7 @@
           "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
           "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
           "location": { "$ref": "#/components/schemas/HazardLocation" },
+          "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6g7h8i9j0" }
           "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6a7b8c9d0" }
         }
       },
