@@ -54,9 +54,20 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// GET /api/users
+const getUsers = async (req, res) => {
+    try {
+        const users = await userService.getAllUsers();
+        res.status(200).json({ success: true, count: users.length, data: users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
 module.exports = {
     createUser,
     getUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    getUsers
 };
