@@ -24,15 +24,9 @@ const deleteUser = async (id) => {
     return await User.findByIdAndDelete(id);
 };
 
-const getAllUsers = async () => {
-    // Finds all users but leaves the password field out
-    return await User.find().select('-password'); 
-};
-
 module.exports = {
     createUser,
     getUserById,
     updateUser,
-    deleteUser,
-    getAllUsers
+    deleteUser
 };
