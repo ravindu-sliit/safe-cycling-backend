@@ -248,6 +248,7 @@
     "/api/hazards": {
       "get": {
         "summary": "Get all hazard reports",
+        "operationId": "getHazards",
         "tags": ["Hazards"],
         "responses": {
           "200": {
@@ -259,6 +260,7 @@
                   "items": {
                     "$ref": "#/components/schemas/HazardReport"
                   }
+                  "items": { "$ref": "#/components/schemas/HazardReport" }
                 }
               }
             }
@@ -267,6 +269,7 @@
       },
       "post": {
         "summary": "Create a hazard report",
+        "operationId": "createHazard",
         "tags": ["Hazards"],
         "requestBody": {
           "required": true,
@@ -275,6 +278,7 @@
               "schema": {
                 "$ref": "#/components/schemas/HazardReportInput"
               }
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
             }
           }
         },
@@ -282,6 +286,14 @@
           "201": {
             "description": "Hazard report created"
           }
+            "description": "Hazard report created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "400": { "description": "Invalid input" }
         }
       }
     },
@@ -298,6 +310,10 @@
               "type": "string"
             }
           }
+        "operationId": "getHazardById",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
@@ -327,6 +343,19 @@
               "type": "string"
             }
           }
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "put": {
+        "summary": "Update a hazard report",
+        "operationId": "updateHazard",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
         ],
         "requestBody": {
           "required": true,
@@ -335,6 +364,7 @@
               "schema": {
                 "$ref": "#/components/schemas/HazardReportInput"
               }
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
             }
           }
         },
@@ -345,6 +375,15 @@
           "404": {
             "description": "Not found"
           }
+            "description": "Hazard report updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "400": { "description": "Invalid input" },
+          "404": { "description": "Not found" }
         }
       },
       "delete": {
@@ -367,6 +406,14 @@
           "404": {
             "description": "Not found"
           }
+        "operationId": "deleteHazard",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Hazard report deleted" },
+          "404": { "description": "Not found" }
         }
       }
     }
@@ -427,6 +474,7 @@
           "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
           "location": { "$ref": "#/components/schemas/HazardLocation" },
           "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6g7h8i9j0" }
+          "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6a7b8c9d0" }
         }
       },
       "HazardReport": {
