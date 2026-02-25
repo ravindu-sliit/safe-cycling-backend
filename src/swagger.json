@@ -253,11 +253,15 @@
             "description": "Hazard report created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HazardReport" }
+                "schema": {
+                  "$ref": "#/components/schemas/HazardReport"
+                }
               }
             }
           },
-          "400": { "description": "Invalid input" }
+          "400": {
+            "description": "Invalid input"
+          }
         }
       }
     },
@@ -301,12 +305,18 @@
             "description": "Hazard report updated",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/HazardReport" }
+                "schema": {
+                  "$ref": "#/components/schemas/HazardReport"
+                }
               }
             }
           },
-          "400": { "description": "Invalid input" },
-          "404": { "description": "Not found" }
+          "400": {
+            "description": "Invalid input"
+          },
+          "404": {
+            "description": "Not found"
+          }
         }
       },
       "delete": {
