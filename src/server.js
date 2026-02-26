@@ -10,6 +10,7 @@ dotenv.config();
 const app = express();
 // Import the routes
 const routeRoutes = require('./routes/routeRoutes');
+const hazardRoutes = require('./routes/hazardRoutes');
 
 const userRoutes = require('./routes/userRoutes');
 
@@ -25,6 +26,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount the routes
 app.use('/api/routes', routeRoutes);
+app.use('/api/hazards', hazardRoutes);
 
 app.use('/api/users', userRoutes);
 
