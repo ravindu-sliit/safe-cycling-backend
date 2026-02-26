@@ -2,10 +2,6 @@ const mongoose = require('mongoose');
 
 const reviewSchema = new mongoose.Schema(
     {
-        reviewId: {
-            type: String,
-            unique: true
-        },
         route: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Route',
@@ -39,15 +35,7 @@ const reviewSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-// One review per user per route (common for community rating systems)
+// One review per user per route
 reviewSchema.index({ route: 1, user: 1 }, { unique: true });
-
-// Ensure reviewId is always set to the underlying MongoDB _id as a string
-reviewSchema.pre('save', function (next) {
-    if (!this.reviewId) {
-        this.reviewId = this._id.toString();
-    }
-    next();
-});
 
 module.exports = mongoose.model('Review', reviewSchema);
