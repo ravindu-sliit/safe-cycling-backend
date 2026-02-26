@@ -345,16 +345,91 @@
           },
           "404": {
             "description": "Review not found"
+          }
+        }
+      }
+    },
+    "/api/hazards": {
+      "get": {
+        "summary": "Get all hazard reports",
+        "tags": ["Hazards"],
+        "responses": {
+          "200": {
+            "description": "List of hazard reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/HazardReport" }
+                }
+              }
             }
           }
+        }
+      },
+      "post": {
+        "summary": "Create a hazard report",
+        "tags": ["Hazards"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Hazard report created" }
+        }
+      }
+    },
+    "/api/hazards/{id}": {
+      "get": {
+        "summary": "Get a hazard report by ID",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
-          "204": {
-            "description": "Hazard report deleted"
+          "200": {
+            "description": "Hazard report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
           },
-          "404": {
-            "description": "Not found"
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+            }
           }
+        },
+        "responses": {
+          "200": { "description": "Hazard report updated" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Hazard report deleted" },
+          "404": { "description": "Not found" }
         }
       }
     }
@@ -363,13 +438,13 @@
     "schemas": {
       "RouteInput": {
         "type": "object",
-        "required": ["title", "startLocation", "endLocation", "distance"],
+        "required": ["title", "startLocation", "endLocation", "distance", "ecoScore"],
         "properties": {
-          "title": { "type": "string", "example": "Coastal Breeze Path" },
-          "startLocation": { "type": "string", "example": "Mt. Lavinia" },
-          "endLocation": { "type": "string", "example": "Galle Face" },
-          "distance": { "type": "number", "example": 10.5 },
-          "ecoScore": { "type": "integer", "example": 9 }
+          "title": { "type": "string", "example": "Colombo City Eco-Trail" },
+          "startLocation": { "type": "string", "example": "Viharamahadevi Park" },
+          "endLocation": { "type": "string", "example": "Galle Face Green" },
+          "distance": { "type": "number", "example": 3.5 },
+          "ecoScore": { "type": "number", "example": 8 }
         }
       },
       "UserInput": {
@@ -408,6 +483,7 @@
           "ecoRating": { "type": "number", "example": 4 },
           "comment": { "type": "string", "example": "A bit more traffic during peak hours, but still manageable." }
         }
+      },
       "HazardLocation": {
         "type": "object",
         "required": ["type", "coordinates"],
