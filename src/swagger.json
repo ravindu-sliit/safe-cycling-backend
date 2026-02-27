@@ -32,6 +32,7 @@
                       "endLocation": "Galle Face Green",
                       "distance": 3.5,
                       "ecoScore": 8
+                      
                     }
                   ]
                 }
@@ -438,13 +439,38 @@
     "schemas": {
       "RouteInput": {
         "type": "object",
-        "required": ["title", "startLocation", "endLocation", "distance", "ecoScore"],
+        "required": ["title", "startLocation", "endLocation", "ecoScore"],
         "properties": {
-          "title": { "type": "string", "example": "Colombo City Eco-Trail" },
-          "startLocation": { "type": "string", "example": "Viharamahadevi Park" },
-          "endLocation": { "type": "string", "example": "Galle Face Green" },
-          "distance": { "type": "number", "example": 3.5 },
-          "ecoScore": { "type": "number", "example": 8 }
+          "title": { "type": "string", "example": "Wetland Nature Trail" },
+          "startLocation": {
+            "type": "object",
+            "required": ["coordinates", "address"],
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [79.9192, 6.9006]
+              },
+              "address": { "type": "string", "example": "Diyatha Uyana, Battaramulla" }
+            }
+          },
+          "endLocation": {
+            "type": "object",
+            "required": ["coordinates", "address"],
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [79.9075, 6.8905]
+              },
+              "address": { "type": "string", "example": "Beddagana Wetland Park" }
+            }
+          },
+          "ecoScore": { "type": "number", "example": 10 }
         }
       },
       "UserInput": {
