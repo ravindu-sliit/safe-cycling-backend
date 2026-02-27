@@ -32,6 +32,7 @@
                       "endLocation": "Galle Face Green",
                       "distance": 3.5,
                       "ecoScore": 8
+                      
                     }
                   ]
                 }
@@ -113,6 +114,34 @@
       }
     },
     "/api/users": {
+      "get": {
+        "summary": "Get all users",
+        "tags": ["Users"],
+        "responses": {
+          "200": {
+            "description": "A list of all users",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "count": 1,
+                  "data": [
+                    {
+                      "_id": "699d2bc156ad784c44031635",
+                      "name": "Binoth Kulangana",
+                      "email": "binoth@test.com",
+                      "role": "user",
+                      "cyclingStyle": "commuter",
+                      "createdAt": "2026-02-24T04:40:33.397Z",
+                      "updatedAt": "2026-02-24T04:40:33.397Z"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Create a new user profile",
         "tags": ["Users"],
@@ -216,19 +245,232 @@
           }
         }
       }
+    },
+    "/api/reviews": {
+      "post": {
+        "summary": "Submit a new review and rating for a route",
+        "tags": ["Reviews"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review created successfully"
+          },
+          "409": {
+            "description": "Already reviewed this route"
+          }
+        }
+      }
+    },
+    "/api/reviews/route/{routeId}": {
+      "get": {
+        "summary": "Fetch all reviews for a particular route",
+        "tags": ["Reviews"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "routeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The route ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviews for the route"
+          }
+        }
+      }
+    },
+    "/api/reviews/{id}": {
+      "put": {
+        "summary": "Edit an existing review",
+        "tags": ["Reviews"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The review ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewUpdateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review updated successfully"
+          },
+          "404": {
+            "description": "Review not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a review",
+        "tags": ["Reviews"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The review ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted successfully"
+          },
+          "404": {
+            "description": "Review not found"
+          }
+        }
+      }
+    },
+    "/api/hazards": {
+      "get": {
+        "summary": "Get all hazard reports",
+        "tags": ["Hazards"],
+        "responses": {
+          "200": {
+            "description": "List of hazard reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/HazardReport" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a hazard report",
+        "tags": ["Hazards"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Hazard report created" }
+        }
+      }
+    },
+    "/api/hazards/{id}": {
+      "get": {
+        "summary": "Get a hazard report by ID",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hazard report",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Hazard report updated" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a hazard report",
+        "tags": ["Hazards"],
+        "parameters": [
+          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Hazard report deleted" },
+          "404": { "description": "Not found" }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
       "RouteInput": {
         "type": "object",
-        "required": ["title", "startLocation", "endLocation", "distance", "ecoScore"],
+        "required": ["title", "startLocation", "endLocation", "ecoScore"],
         "properties": {
-          "title": { "type": "string", "example": "Colombo City Eco-Trail" },
-          "startLocation": { "type": "string", "example": "Viharamahadevi Park" },
-          "endLocation": { "type": "string", "example": "Galle Face Green" },
-          "distance": { "type": "number", "example": 3.5 },
-          "ecoScore": { "type": "number", "example": 8 }
+          "title": { "type": "string", "example": "Wetland Nature Trail" },
+          "startLocation": {
+            "type": "object",
+            "required": ["coordinates", "address"],
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [79.9192, 6.9006]
+              },
+              "address": { "type": "string", "example": "Diyatha Uyana, Battaramulla" }
+            }
+          },
+          "endLocation": {
+            "type": "object",
+            "required": ["coordinates", "address"],
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 2,
+                "maxItems": 2,
+                "example": [79.9075, 6.8905]
+              },
+              "address": { "type": "string", "example": "Beddagana Wetland Park" }
+            }
+          },
+          "ecoScore": { "type": "number", "example": 10 }
         }
       },
       "UserInput": {
@@ -248,131 +490,66 @@
           "name": { "type": "string", "example": "Binoth Kulangana" },
           "cyclingStyle": { "type": "string", "example": "fitness" }
         }
-      }
-    }
-  },
-  "/api/hazards": {
-    "get": {
-      "summary": "Get all hazard reports",
-      "tags": ["Hazards"],
-      "responses": {
-        "200": {
-          "description": "List of hazard reports",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": { "$ref": "#/components/schemas/HazardReport" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "post": {
-      "summary": "Create a hazard report",
-      "tags": ["Hazards"],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/HazardReportInput" }
-          }
+      },
+      "ReviewInput": {
+        "type": "object",
+        "required": ["route", "user", "safetyRating", "ecoRating"],
+        "properties": {
+          "route": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j0" },
+          "user": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j9" },
+          "safetyRating": { "type": "number", "example": 4 },
+          "ecoRating": { "type": "number", "example": 5 },
+          "comment": { "type": "string", "example": "Low traffic, shaded streets, and dedicated bike lane in most segments." }
         }
       },
-      "responses": {
-        "201": { "description": "Hazard report created" }
-      }
-    }
-  },
-  "/api/hazards/{id}": {
-    "get": {
-      "summary": "Get a hazard report by ID",
-      "tags": ["Hazards"],
-      "parameters": [
-        { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
-      ],
-      "responses": {
-        "200": {
-          "description": "Hazard report",
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/HazardReport" }
-            }
-          }
-        },
-        "404": { "description": "Not found" }
-      }
-    },
-    "patch": {
-      "summary": "Update a hazard report",
-      "tags": ["Hazards"],
-      "parameters": [
-        { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
-      ],
-      "requestBody": {
-        "required": true,
-        "content": {
-          "application/json": {
-            "schema": { "$ref": "#/components/schemas/HazardReportInput" }
-          }
-        }
-      },
-      "responses": {
-        "200": { "description": "Hazard report updated" },
-        "404": { "description": "Not found" }
-      }
-    },
-    "delete": {
-      "summary": "Delete a hazard report",
-      "tags": ["Hazards"],
-      "parameters": [
-        { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
-      ],
-      "responses": {
-        "204": { "description": "Hazard report deleted" },
-        "404": { "description": "Not found" }
-      }
-    }
-  },
-  "HazardLocation": {
-    "type": "object",
-    "required": ["type", "coordinates"],
-    "properties": {
-      "type": { "type": "string", "enum": ["Point"], "example": "Point" },
-      "coordinates": {
-        "type": "array",
-        "items": { "type": "number" },
-        "minItems": 2,
-        "maxItems": 2,
-        "example": [79.8612, 6.9271]
-      }
-    }
-  },
-  "HazardReportInput": {
-    "type": "object",
-    "required": ["title", "description", "type", "location", "createdBy"],
-    "properties": {
-      "title": { "type": "string", "example": "Pothole near 5th Street" },
-      "description": { "type": "string", "example": "Large pothole blocking the bike lane." },
-      "type": { "type": "string", "enum": ["pothole", "debris", "lighting", "collision", "other"], "example": "pothole" },
-      "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
-      "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
-      "location": { "$ref": "#/components/schemas/HazardLocation" },
-      "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6g7h8i9j0" }
-    }
-  },
-  "HazardReport": {
-    "allOf": [
-      { "$ref": "#/components/schemas/HazardReportInput" },
-      {
+      "ReviewUpdateInput": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j0" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "safetyRating": { "type": "number", "example": 3 },
+          "ecoRating": { "type": "number", "example": 4 },
+          "comment": { "type": "string", "example": "A bit more traffic during peak hours, but still manageable." }
         }
+      },
+      "HazardLocation": {
+        "type": "object",
+        "required": ["type", "coordinates"],
+        "properties": {
+          "type": { "type": "string", "enum": ["Point"], "example": "Point" },
+          "coordinates": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2,
+            "example": [79.8612, 6.9271]
+          }
+        }
+      },
+      "HazardReportInput": {
+        "type": "object",
+        "required": ["title", "description", "type", "location", "createdBy"],
+        "properties": {
+          "title": { "type": "string", "example": "Pothole near 5th Street" },
+          "description": { "type": "string", "example": "Large pothole blocking the bike lane." },
+          "type": { "type": "string", "enum": ["pothole", "debris", "lighting", "collision", "other"], "example": "pothole" },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
+          "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
+          "location": { "$ref": "#/components/schemas/HazardLocation" },
+          "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6g7h8i9j0" }
+        }
+      },
+      "HazardReport": {
+        "allOf": [
+          { "$ref": "#/components/schemas/HazardReportInput" },
+          {
+            "type": "object",
+            "properties": {
+              "_id": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j0" },
+              "createdAt": { "type": "string", "format": "date-time" },
+              "updatedAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        ]
       }
-    ]
+    }
   }
 }
