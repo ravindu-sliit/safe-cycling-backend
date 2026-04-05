@@ -13,6 +13,7 @@ const routeRoutes = require('./routes/routeRoutes');
 const hazardRoutes = require('./routes/hazardRoutes');
 
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
@@ -27,6 +28,7 @@ app.use('/api/routes', routeRoutes);
 app.use('/api/hazards', hazardRoutes);
 
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 // Connect to MongoDB 
 // (Commented out until you add your real URI to the .env file)
