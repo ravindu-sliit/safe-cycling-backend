@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     name: { 
@@ -22,9 +23,32 @@ const userSchema = new mongoose.Schema({
     cyclingStyle: { 
         type: String,
         default: 'commuter'
+    },isVerified: {
+        type: Boolean,
+        default: false
+    },
+    verificationToken: {
+        type: String
+    },
+    resetPasswordToken: {
+        type: String
+    },
+    resetPasswordExpire: {
+        type: Date
     }
 }, { 
     timestamps: true // This automatically adds createdAt and updatedAt fields
+});
+
+userSchema.pre('save', async function () {
+    // If the password wasn't modified, skip this
+    if (!this.isModified('password')) {
+        return;
+    }
+    // Generate a 'salt' and hash the password
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    
 });
 
 module.exports = mongoose.model('User', userSchema);
