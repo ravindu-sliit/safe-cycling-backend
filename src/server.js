@@ -20,8 +20,10 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 
 // Middleware to parse JSON and enable CORS
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount the routes
@@ -38,6 +40,25 @@ connectDB();
 // A simple test route
 app.get('/', (req, res) => {
     res.json({ message: 'Eco-friendly Cycling Route API is running!' });
+});
+
+app.use((error, req, res, next) => {
+    if (error?.type === 'entity.too.large') {
+        return res.status(413).json({
+            success: false,
+            message: 'Uploaded image is too large. Please choose a smaller profile photo.'
+        });
+    }
+
+    if (error) {
+        console.error(error);
+        return res.status(error.status || 500).json({
+            success: false,
+            message: error.message || 'Server Error'
+        });
+    }
+
+    next();
 });
 
 // Define the port and start the server

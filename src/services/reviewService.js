@@ -73,6 +73,32 @@ const getReviewsByRouteId = async (routeId) => {
     };
 };
 
+const getAllReviews = async () => {
+    const reviews = await Review.find()
+        .populate('user', 'name email role cyclingStyle profileImageUrl')
+        .populate('route', 'title distance ecoScore startLocation endLocation')
+        .sort({ createdAt: -1 });
+
+    const count = reviews.length;
+    const safetyAvg = count
+        ? reviews.reduce((sum, review) => sum + review.safetyRating, 0) / count
+        : 0;
+    const ecoAvg = count
+        ? reviews.reduce((sum, review) => sum + review.ecoRating, 0) / count
+        : 0;
+    const overallAvg = count ? (safetyAvg + ecoAvg) / 2 : 0;
+
+    return {
+        reviews,
+        count,
+        averages: {
+            safety: Number(safetyAvg.toFixed(2)),
+            eco: Number(ecoAvg.toFixed(2)),
+            overall: Number(overallAvg.toFixed(2))
+        }
+    };
+};
+
 const updateReview = async (id, updateData) => {
     assertObjectId(id, 'id');
 
@@ -92,6 +118,7 @@ const deleteReview = async (id) => {
 
 module.exports = {
     createReview,
+    getAllReviews,
     getReviewsByRouteId,
     updateReview,
     deleteReview

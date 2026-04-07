@@ -14,6 +14,17 @@ const createReview = async (req, res) => {
     }
 };
 
+// GET /api/reviews
+const getAllReviews = async (req, res) => {
+    try {
+        const result = await reviewService.getAllReviews();
+        res.status(200).json({ success: true, ...result });
+    } catch (error) {
+        const status = error.statusCode || 400;
+        res.status(status).json({ success: false, message: error.message });
+    }
+};
+
 // GET /api/reviews/route/:routeId
 const getReviewsByRoute = async (req, res) => {
     try {
@@ -66,6 +77,7 @@ const deleteReview = async (req, res) => {
 
 module.exports = {
     createReview,
+    getAllReviews,
     getReviewsByRoute,
     updateReview,
     deleteReview
