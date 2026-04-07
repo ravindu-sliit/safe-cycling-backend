@@ -67,8 +67,8 @@ const getUsers = async (req, res) => {
 // Update user information
 const updateUser = async (req, res) => {
     try {
-        // FIX 4: Security Check - Ensure the logged-in user matches the ID being updated
-        if (req.user && req.user.id !== req.params.id) {
+        // Resource-based ownership check: allow if updating own profile OR admin
+        if (req.user._id.toString() !== req.params.id && req.user.role !== 'admin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Forbidden: You can only update your own profile' 
