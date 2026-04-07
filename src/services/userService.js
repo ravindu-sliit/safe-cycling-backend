@@ -16,8 +16,13 @@ const updateUser = async (id, updateData) => {
     const user = await User.findById(id);
     if (!user) throw new Error('User not found');
 
-    // This merges the new data into the existing user object
-    Object.assign(user, updateData);
+    const allowedFields = ['name', 'email', 'cyclingStyle', 'password'];
+
+    allowedFields.forEach((field) => {
+        if (Object.prototype.hasOwnProperty.call(updateData, field) && updateData[field] !== undefined) {
+            user[field] = updateData[field];
+        }
+    });
 
     // Calling .save() forces the bcrypt pre('save') hook to run!
     await user.save();
