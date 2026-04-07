@@ -30,6 +30,16 @@ const hazardReportSchema = new mongoose.Schema(
             enum: ['reported', 'pending', 'resolved'],
             default: 'reported',
         },
+        solveResult: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 2000,
+        },
+        resolvedAt: {
+            type: Date,
+            default: null,
+        },
         location: {
             type: {
                 type: String,
@@ -58,6 +68,16 @@ const hazardReportSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             required: true,
+        },
+        updatedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
+        },
+        resolvedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null,
         },
     },
     { timestamps: true }

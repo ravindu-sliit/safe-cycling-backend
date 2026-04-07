@@ -20,6 +20,7 @@ const upload = multer({
 router.post('/upload-image', upload.single('image'), hazardController.uploadHazardImage);
 router.post('/', hazardController.createHazard);
 router.get('/', hazardController.getAllHazards);
+router.patch('/:id/resolve', hazardController.resolveHazard);
 router.get('/:id', hazardController.getHazardById);
 router.put('/:id', hazardController.updateHazard);
 router.delete('/:id', hazardController.deleteHazard);

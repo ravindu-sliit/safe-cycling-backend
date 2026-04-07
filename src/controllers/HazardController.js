@@ -1,6 +1,8 @@
 const hazardService = require('../services/HazardService');
 const imageKitService = require('../services/imageKitService');
 
+const normalizeText = (value) => (typeof value === 'string' ? value.trim() : '');
+
 const createHazard = async (req, res, next) => {
     try{
         const report = await hazardService.createHazard(req.body);
@@ -32,7 +34,51 @@ const getHazardById = async (req, res, next) => {
 
 const updateHazard = async (req, res, next) => {
     try {
-        const updated = await hazardService.updateHazard(req.params.id, req.body);
+        const payload = { ...req.body };
+
+        if ('solveResult' in payload) {
+            payload.solveResult = normalizeText(payload.solveResult);
+        }
+
+        if (payload.status === 'resolved' && !payload.solveResult) {
+            return res.status(400).json({ message: 'Solve result is required when marking a hazard as resolved.' });
+        }
+
+        if (payload.status && payload.status !== 'resolved') {
+            payload.solveResult = '';
+            payload.resolvedBy = null;
+            payload.resolvedAt = null;
+        }
+
+        const updated = await hazardService.updateHazard(req.params.id, payload);
+        if (!updated) return res.status(404).json({ message: 'Not found' });
+        res.json(updated);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const resolveHazard = async (req, res, next) => {
+    try {
+        const solveResult = normalizeText(req.body.solveResult);
+        const actorId = req.body.resolvedBy || req.body.updatedBy;
+
+        if (!actorId) {
+            return res.status(400).json({ message: 'A valid user is required to mark hazard as solved.' });
+        }
+
+        if (!solveResult) {
+            return res.status(400).json({ message: 'Solve result is required to mark hazard as solved.' });
+        }
+
+        const updated = await hazardService.updateHazard(req.params.id, {
+            status: 'resolved',
+            solveResult,
+            resolvedBy: actorId,
+            updatedBy: actorId,
+            resolvedAt: new Date(),
+        });
+
         if (!updated) return res.status(404).json({ message: 'Not found' });
         res.json(updated);
     } catch (err) {
@@ -68,6 +114,7 @@ module.exports = {
     getAllHazards,
     getHazardById,
     updateHazard,
+    resolveHazard,
     deleteHazard,
     uploadHazardImage
 };
