@@ -10,13 +10,21 @@ const {
     getUsers
 } = require('../controllers/userController');
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, authorize } = require('../middleware/authMiddleware');
 
+// POST / -> Public
 router.post('/', createUser);           
 
+// GET / -> Admin only
+router.get('/', protect, authorize('admin'), getUsers);
+
+// GET /:id -> Any logged-in user
 router.get('/:id', protect, getUser);            
+
+// PUT /:id -> Any logged-in user
 router.put('/:id', protect, updateUser);         
-router.delete('/:id', protect, deleteUser);      
-router.get('/',protect, getUsers);              
+
+// DELETE /:id -> Admin only
+router.delete('/:id', protect, authorize('admin'), deleteUser);      
 
 module.exports = router;

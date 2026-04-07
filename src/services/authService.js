@@ -22,8 +22,9 @@ const loginUser = async (email, password) => {
     }
 
     // 3. Generate the JWT (JSON Web Token) VIP Pass
+    // 3. Generate the JWT (JSON Web Token) VIP Pass with role included
     const token = jwt.sign(
-        { id: user._id }, 
+        { id: user._id, role: user.role }, 
         process.env.JWT_SECRET, 
         { expiresIn: '30d' } // Token lasts for 30 days
     );
