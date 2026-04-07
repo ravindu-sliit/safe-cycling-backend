@@ -6,6 +6,16 @@ const crypto = require('crypto');
 // Create a new user profile
 const createUser = async (req, res) => {
     try {
+        // Security: Users can only create themselves as 'user' role
+        // Admin and organization roles must be set by actual admins
+        if (req.body.role && req.body.role !== 'user') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'You cannot assign this role. Contact an admin.' 
+            });
+        }
+        req.body.role = 'user'; // Force user role on signup
+
         // 1. Generate a random, plain-text token
         const verificationToken = crypto.randomBytes(20).toString('hex');
 
@@ -88,8 +98,8 @@ const updateUser = async (req, res) => {
 // Remove a user profile from the system
 const deleteUser = async (req, res) => {
     try {
-        // FIX 4: Security Check - Ensure the logged-in user matches the ID being deleted
-        if (req.user && req.user.id !== req.params.id) {
+        // Resource-based ownership check: allow if deleting own profile OR admin
+        if (req.user._id.toString() !== req.params.id && req.user.role !== 'admin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Forbidden: You can only delete your own profile' 
