@@ -1,30 +1,40 @@
-// src/services/userService.js
+
 const User = require('../models/User');
 
-// Create a new user in the database
+
 const createUser = async (userData) => {
     return await User.create(userData);
 };
 
-// Find a user by their ID
+
 const getUserById = async (id) => {
-    return await User.findById(id);
+    return await User.findById(id).select('-password');
 };
 
-// Update a user's details
+
 const updateUser = async (id, updateData) => {
-    return await User.findByIdAndUpdate(id, updateData, { 
-        new: true, 
-        runValidators: true 
-    });
+    const user = await User.findById(id);
+    if (!user) throw new Error('User not found');
+
+    // This merges the new data into the existing user object
+    Object.assign(user, updateData);
+
+    // Calling .save() forces the bcrypt pre('save') hook to run!
+    await user.save();
+
+    // Strip the password before returning
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    return userResponse;
 };
 
-// Delete a user from the database
+
 const deleteUser = async (id) => {
     return await User.findByIdAndDelete(id);
 };
 
-// Get all users (excluding passwords for security)
+
 const getAllUsers = async () => {
     return await User.find().select('-password'); 
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-// Import the controller functions you just wrote
+
 const {
     createUser,
     getUser,
@@ -10,11 +10,21 @@ const {
     getUsers
 } = require('../controllers/userController');
 
-// Map the endpoints to the specific controller functions
-router.post('/', createUser);           // POST /api/users
-router.get('/:id', getUser);            // GET /api/users/:id
-router.put('/:id', updateUser);         // PUT /api/users/:id
-router.delete('/:id', deleteUser);      // DELETE /api/users/:id
-router.get('/', getUsers);              // GET /api/users
+const { protect, authorize } = require('../middleware/authMiddleware');
+
+// POST / -> Public
+router.post('/', createUser);           
+
+// GET / -> Admin only
+router.get('/', protect, authorize('admin'), getUsers);
+
+// GET /:id -> Any logged-in user
+router.get('/:id', protect, getUser);            
+
+// PUT /:id -> Any logged-in user
+router.put('/:id', protect, updateUser);         
+
+// DELETE /:id -> Admin only
+router.delete('/:id', protect, authorize('admin'), deleteUser);      
 
 module.exports = router;
