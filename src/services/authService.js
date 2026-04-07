@@ -17,6 +17,10 @@ const loginUser = async (email, password) => {
         throw new Error('Invalid email or password');
     }
 
+    if (!user.isVerified) {
+        throw new Error('Please verify your email address before logging in.');
+    }
+
     // 3. Generate the JWT (JSON Web Token) VIP Pass
     const token = jwt.sign(
         { id: user._id }, 

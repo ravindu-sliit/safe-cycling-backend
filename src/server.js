@@ -1,10 +1,11 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const connectDB = require('./config/db');
 
-// Load environment variables from .env file
-dotenv.config();
+// Load environment variables from the src/.env file beside this server entrypoint
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Initialize express app
 const app = express();
@@ -47,4 +48,6 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Mailer: Gmail SMTP as ${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}`);
+    console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 });

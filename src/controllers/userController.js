@@ -3,6 +3,8 @@ const userService = require('../services/userService');
 const { sendWelcomeEmail } = require('../services/emailService');
 const crypto = require('crypto');
 
+const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
+
 // Create a new user profile
 const createUser = async (req, res) => {
     try {
@@ -19,7 +21,7 @@ const createUser = async (req, res) => {
         const newUser = await userService.createUser(req.body);
         
         // 5. Create the clickable Verification URL 
-        const verificationUrl = `http://localhost:5000/api/auth/verify/${verificationToken}`;
+        const verificationUrl = `${getFrontendUrl()}/verify-email/${verificationToken}`;
 
         // --- UPDATED API TRIGGER ---
         // Send the welcome email and pass the verificationUrl to your email service

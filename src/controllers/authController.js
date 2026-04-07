@@ -1,27 +1,26 @@
 // src/controllers/authController.js
 const authService = require('../services/authService');
 
-
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require('../services/emailService');
+const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // POST /api/auth/login
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Call the service layer to do the heavy lifting
         const result = await authService.loginUser(email, password);
 
         res.status(200).json({
             success: true,
             message: 'Login successful',
             token: result.token,
-            // Send back the user details (but NOT the password)
             user: {
                 id: result.user._id,
                 name: result.user.name,
                 email: result.user.email,
-                cyclingStyle: result.user.cyclingStyle
+                cyclingStyle: result.user.cyclingStyle,
+                role: result.user.role
             }
         });
     } catch (error) {
@@ -31,7 +30,6 @@ const login = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
     try {
-        // We will pass the token in the URL (e.g., /api/auth/verify/:token)
         const { token } = req.params;
 
         await authService.verifyEmailToken(token);
@@ -45,36 +43,40 @@ const verifyEmail = async (req, res) => {
     }
 };
 
+// GET /api/auth/resetpassword/:token
+const redirectToResetPasswordPage = (req, res) => {
+    const resetUrl = `${getFrontendUrl()}/reset-password/${req.params.token}`;
+    res.redirect(resetUrl);
+};
+
 // POST /api/auth/forgotpassword
 const forgotPassword = async (req, res) => {
     try {
         const { email } = req.body;
         const { user, resetToken } = await authService.forgotPassword(email);
 
-        // Create the reset URL (pointing to your backend for Postman testing)
-        const resetUrl = `http://localhost:5000/api/auth/resetpassword/${resetToken}`;
+        const resetUrl = `${getFrontendUrl()}/reset-password/${resetToken}`;
+        console.log(`Password reset URL for ${user.email}: ${resetUrl}`);
 
-        // Send the email
         await sendPasswordResetEmail(user.email, user.name, resetUrl);
 
         res.status(200).json({ success: true, message: 'Password reset email sent' });
     } catch (error) {
-        res.status(404).json({ success: false, message: error.message });
+        const statusCode = error.message === 'There is no user registered with that email address.' ? 404 : 500;
+        res.status(statusCode).json({ success: false, message: error.message });
     }
 };
 
 // PUT /api/auth/resetpassword/:token
 const resetPassword = async (req, res) => {
     try {
-        // Grab the user object returned by your service layer
         const user = await authService.resetPassword(req.params.token, req.body.password);
 
-        // --- NEW: Trigger the confirmation email ---
         await sendPasswordChangedEmail(user.email, user.name);
 
-        res.status(200).json({ 
-            success: true, 
-            message: 'Password has been successfully reset. You can now log in.' 
+        res.status(200).json({
+            success: true,
+            message: 'Password has been successfully reset. You can now log in.'
         });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -84,6 +86,7 @@ const resetPassword = async (req, res) => {
 module.exports = {
     login,
     verifyEmail,
+    redirectToResetPasswordPage,
     forgotPassword,
     resetPassword
 };

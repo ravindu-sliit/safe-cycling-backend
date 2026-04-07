@@ -8,6 +8,7 @@ router.post('/login', authController.login);
 router.get('/verify/:token', authController.verifyEmail);
 
 router.post('/forgotpassword', authController.forgotPassword);
+router.get('/resetpassword/:token', authController.redirectToResetPasswordPage);
 router.put('/resetpassword/:token', authController.resetPassword);
 
 module.exports = router;
