@@ -29,4 +29,24 @@ const protect = async (req, res, next) => {
     }
 };
 
-module.exports = { protect };
+// RBAC: Check if user's role is authorized for this resource
+const authorize = (...allowedRoles) => {
+    return (req, res, next) => {
+        // Ensure protect middleware ran first
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: 'Not authorized, no token provided' });
+        }
+
+        // Check if user's role is in the allowed roles array
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `Forbidden: This action requires one of these roles: ${allowedRoles.join(', ')}` 
+            });
+        }
+
+        next();
+    };
+};
+
+module.exports = { protect, authorize };

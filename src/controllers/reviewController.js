@@ -1,8 +1,11 @@
 const reviewService = require('../services/reviewService');
+const Review = require('../models/Review');
 
 // POST /api/reviews
 const createReview = async (req, res) => {
     try {
+        // Attach the current logged-in user to the review being created
+        req.body.user = req.user._id;
         const created = await reviewService.createReview(req.body);
         res.status(201).json({ success: true, data: created });
     } catch (error) {
@@ -25,10 +28,21 @@ const getReviewsByRoute = async (req, res) => {
 // PUT /api/reviews/:id
 const updateReview = async (req, res) => {
     try {
-        const updated = await reviewService.updateReview(req.params.id, req.body);
-        if (!updated) {
+        // Fetch the review to check ownership
+        const review = await Review.findById(req.params.id);
+        if (!review) {
             return res.status(404).json({ success: false, message: 'Review not found' });
         }
+
+        // Resource-based ownership check: allow if owner OR admin
+        if (review.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Forbidden: You can only update your own reviews' 
+            });
+        }
+
+        const updated = await reviewService.updateReview(req.params.id, req.body);
         res.status(200).json({ success: true, data: updated });
     } catch (error) {
         const status = error.statusCode || 400;
