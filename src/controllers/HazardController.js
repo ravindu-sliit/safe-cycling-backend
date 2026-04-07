@@ -1,4 +1,5 @@
-const hazardService = require('../services/hazardService');
+const hazardService = require('../services/HazardService');
+const imageKitService = require('../services/imageKitService');
 
 const createHazard = async (req, res, next) => {
     try{
@@ -49,10 +50,24 @@ const deleteHazard = async (req, res, next) => {
     }
 };
 
+const uploadHazardImage = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Image file is required' });
+        }
+
+        const uploadResult = await imageKitService.uploadHazardImage(req.file);
+        res.status(201).json(uploadResult);
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     createHazard,
     getAllHazards,
     getHazardById,
     updateHazard,
-    deleteHazard
+    deleteHazard,
+    uploadHazardImage
 };

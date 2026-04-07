@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 // Import the routes
 // const routeRoutes = require('./routes/routeRoutes');
-// const hazardRoutes = require('./routes/hazardRoutes');
+const hazardRoutes = require('./routes/HazardRoutes');
 // const userRoutes = require('./routes/userRoutes');
 // const authRoutes = require('./routes/authRoutes');
 // const reviewRoutes = require('./routes/reviewRoutes');
@@ -25,18 +25,28 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount the routes
 // app.use('/api/routes', routeRoutes);
-// app.use('/api/hazards', hazardRoutes);
+app.use('/api/hazards', hazardRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/auth', authRoutes);
 // app.use('/api/reviews', reviewRoutes);
 
 // Connect to MongoDB 
-// (Commented out until you add your real URI to the .env file)
-// connectDB(); 
+if (process.env.MONGODB_URI) {
+    connectDB();
+} else {
+    console.warn('MONGODB_URI is not set. Database-backed hazard APIs will not work until it is configured.');
+}
 
 // A simple test route
 app.get('/', (req, res) => {
     res.json({ message: 'Eco-friendly Cycling Route API is running!' });
+});
+
+app.use((err, req, res, next) => {
+    console.error(err);
+    res.status(err.status || 500).json({
+        message: err.message || 'Internal server error',
+    });
 });
 
 // Define the port and start the server

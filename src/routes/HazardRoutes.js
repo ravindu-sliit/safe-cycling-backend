@@ -1,8 +1,23 @@
 const express = require('express');
-const hazardController = require('../controllers/hazardController');
+const multer = require('multer');
+const hazardController = require('../controllers/HazardController');
 
 const router = express.Router();
 
+const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: { fileSize: 10 * 1024 * 1024 },
+	fileFilter: (req, file, cb) => {
+		if (file.mimetype && file.mimetype.startsWith('image/')) {
+			cb(null, true);
+			return;
+		}
+
+		cb(new Error('Only image files are allowed'));
+	},
+});
+
+router.post('/upload-image', upload.single('image'), hazardController.uploadHazardImage);
 router.post('/', hazardController.createHazard);
 router.get('/', hazardController.getAllHazards);
 router.get('/:id', hazardController.getHazardById);

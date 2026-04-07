@@ -43,6 +43,17 @@ const hazardReportSchema = new mongoose.Schema(
                 validate: v => v.length === 2,
             },
         },
+        locationName: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 280,
+        },
+        imageUrl: {
+            type: String,
+            trim: true,
+            default: '',
+        },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
