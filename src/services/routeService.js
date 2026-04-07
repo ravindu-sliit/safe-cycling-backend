@@ -8,7 +8,7 @@ const createRoute = async (routeData) => {
 
 // Get all routes
 const getAllRoutes = async () => {
-    return await Route.find();
+    return await Route.find().sort({ createdAt: -1 });
 };
 
 // Update an existing route by ID

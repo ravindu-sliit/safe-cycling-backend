@@ -20,7 +20,11 @@ const login = async (req, res) => {
                 name: result.user.name,
                 email: result.user.email,
                 cyclingStyle: result.user.cyclingStyle,
-                role: result.user.role
+                profileImageUrl: result.user.profileImageUrl || '',
+                role: result.user.role,
+                isVerified: result.user.isVerified,
+                createdAt: result.user.createdAt,
+                updatedAt: result.user.updatedAt
             }
         });
     } catch (error) {
