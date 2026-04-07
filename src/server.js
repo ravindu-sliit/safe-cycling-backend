@@ -9,8 +9,11 @@ dotenv.config();
 // Initialize express app
 const app = express();
 // Import the routes
-const routeRoutes = require('./routes/routeRoutes');
-const hazardRoutes = require('./routes/hazardRoutes');
+// const routeRoutes = require('./routes/routeRoutes');
+// const hazardRoutes = require('./routes/hazardRoutes');
+// const userRoutes = require('./routes/userRoutes');
+// const authRoutes = require('./routes/authRoutes');
+// const reviewRoutes = require('./routes/reviewRoutes');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
@@ -21,12 +24,15 @@ app.use(cors());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Mount the routes
-app.use('/api/routes', routeRoutes);
-app.use('/api/hazards', hazardRoutes);
+// app.use('/api/routes', routeRoutes);
+// app.use('/api/hazards', hazardRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/reviews', reviewRoutes);
 
 // Connect to MongoDB 
 // (Commented out until you add your real URI to the .env file)
-connectDB(); 
+// connectDB(); 
 
 // A simple test route
 app.get('/', (req, res) => {
