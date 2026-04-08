@@ -1,6 +1,7 @@
 // src/controllers/userController.js
 const userService = require('../services/userService');
-const { sendWelcomeEmail } = require('../services/emailService');
+const authService = require('../services/authService');
+const { sendVerificationEmail, sendWelcomeEmail } = require('../services/emailService');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
@@ -19,10 +20,7 @@ const normalizeRole = (value) => String(value || 'user').trim().toLowerCase();
 const normalizeBoolean = (value) => value === true || value === 'true';
 
 const canManageUser = (req) => req.user._id.toString() === req.params.id || req.user.role === 'admin';
-const normalizeUserPayload = (user) => ({
-    ...(typeof user?.toObject === 'function' ? user.toObject() : user),
-    profileImageUrl: user?.profileImageUrl || '',
-});
+const normalizeUserPayload = (user) => userService.normalizeUserResponse(user);
 
 const getFileExtension = (file) => {
     const mimetypeExtension = MIME_EXTENSION_MAP[file.mimetype];
@@ -99,16 +97,9 @@ const createUser = async (req, res) => {
         let verificationUrl = '';
 
         if (!req.body.isVerified) {
-            // 1. Generate a random, plain-text token
-            const verificationToken = crypto.randomBytes(20).toString('hex');
+            const { plainToken: verificationToken, hashedToken } = authService.generateVerificationTokenPair();
 
-            // 2. Hash the token to save securely in the database
-            const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
-
-            // 3. Attach the hashed token to the incoming data BEFORE saving
             req.body.verificationToken = hashedToken;
-
-            // 4. Create the clickable verification URL
             verificationUrl = buildVerificationUrl(req, verificationToken);
         } else {
             req.body.verificationToken = undefined;
@@ -136,9 +127,85 @@ const createUser = async (req, res) => {
     }
 };
 
+const getCurrentUser = async (req, res) => {
+    try {
+        const user = await userService.getUserById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.status(200).json({ success: true, data: normalizeUserPayload(user) });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+const updateCurrentUser = async (req, res) => {
+    try {
+        const updatedUser = await userService.updateUser(req.user._id, req.body, { isAdmin: false });
+        return res.status(200).json({ success: true, data: updatedUser });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+const updateCurrentUserTwoFactor = async (req, res) => {
+    try {
+        const user = await authService.updateTwoFactorPreference(
+            req.user._id,
+            req.body.enabled,
+            req.body.currentPassword
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: user.twoFactorEnabled
+                ? '2-step verification enabled successfully.'
+                : '2-step verification disabled successfully.',
+            data: normalizeUserPayload(user),
+        });
+    } catch (error) {
+        return res.status(error.statusCode || 400).json({ success: false, message: error.message });
+    }
+};
+
+const changeCurrentUserEmail = async (req, res) => {
+    try {
+        const { user, verificationToken } = await authService.changeUserEmail(
+            req.user._id,
+            req.body.email,
+            req.body.currentPassword
+        );
+
+        const verificationUrl = buildVerificationUrl(req, verificationToken);
+        await sendVerificationEmail(user.email, user.name, verificationUrl, {
+            subject: 'Verify your new Safe Cycling email address',
+            preheader: 'Confirm your updated Safe Cycling email address.',
+            heading: `Hi ${user.name || 'there'}, verify your new email address`,
+            intro: 'We updated the email address on your Safe Cycling account. Please verify this new email to keep your account fully active.',
+            buttonLabel: 'Verify new email address',
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Email updated successfully. Please verify your new email address.',
+            data: normalizeUserPayload(user),
+        });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
 // Retrieve a specific user's profile details
 const getUser = async (req, res) => {
     try {
+        if (!canManageUser(req)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Forbidden: You can only view your own profile unless you are an admin.',
+            });
+        }
+
         const user = await userService.getUserById(req.params.id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -309,8 +376,12 @@ const deleteUser = async (req, res) => {
 
 module.exports = {
     createUser,
+    getCurrentUser,
     getUser,
+    updateCurrentUser,
+    updateCurrentUserTwoFactor,
     updateUser,
+    changeCurrentUserEmail,
     uploadProfileImage,
     removeProfileImage,
     deleteUser,

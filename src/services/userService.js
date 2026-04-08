@@ -1,6 +1,5 @@
-
 const User = require('../models/User');
-
+const { applyUserPreferencesUpdate, buildUserPreferences } = require('../utils/userPreferences');
 
 const createUser = async (userData) => {
     return await User.create(userData);
@@ -13,25 +12,36 @@ const normalizeUserResponse = (user) => {
 
     const userResponse = typeof user.toObject === 'function' ? user.toObject() : { ...user };
     delete userResponse.password;
+    delete userResponse.verificationToken;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpire;
+    delete userResponse.twoFactorCode;
+    delete userResponse.twoFactorCodeExpire;
+    delete userResponse.twoFactorChallengeToken;
+    delete userResponse.twoFactorChallengeExpire;
+    delete userResponse.twoFactorAttempts;
+    delete userResponse.twoFactorLastSentAt;
     userResponse.profileImageUrl = userResponse.profileImageUrl || '';
+    userResponse.twoFactorEnabled = Boolean(userResponse.twoFactorEnabled);
+    userResponse.preferences = buildUserPreferences(userResponse.preferences);
 
     return userResponse;
 };
 
-
 const getUserById = async (id) => {
     return await User.findById(id).select('-password');
 };
-
 
 const normalizeRole = (value) => String(value || 'user').trim().toLowerCase();
 const normalizeBoolean = (value) => value === true || value === 'true';
 
 const updateUser = async (id, updateData, options = {}) => {
     const user = await User.findById(id);
-    if (!user) throw new Error('User not found');
+    if (!user) {
+        throw new Error('User not found');
+    }
 
-    const allowedFields = ['name', 'email', 'cyclingStyle', 'password'];
+    const allowedFields = ['name', 'cyclingStyle'];
     const isAdmin = options.isAdmin === true;
 
     if (isAdmin) {
@@ -58,7 +68,10 @@ const updateUser = async (id, updateData, options = {}) => {
         }
     });
 
-    // Calling .save() forces the bcrypt pre('save') hook to run!
+    if (Object.prototype.hasOwnProperty.call(updateData, 'preferences')) {
+        applyUserPreferencesUpdate(user, updateData.preferences);
+    }
+
     await user.save();
 
     return normalizeUserResponse(user);
@@ -88,14 +101,13 @@ const clearUserProfileImage = async (id) => {
     return normalizeUserResponse(user);
 };
 
-
 const deleteUser = async (id) => {
     return await User.findByIdAndDelete(id);
 };
 
-
 const getAllUsers = async () => {
-    return await User.find().select('-password'); 
+    const users = await User.find().select('-password');
+    return users.map((user) => normalizeUserResponse(user));
 };
 
 module.exports = {
@@ -105,5 +117,6 @@ module.exports = {
     setUserProfileImage,
     clearUserProfileImage,
     deleteUser,
-    getAllUsers
+    getAllUsers,
+    normalizeUserResponse,
 };

@@ -28,6 +28,44 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    preferences: {
+        notifications: {
+            email: {
+                type: Boolean,
+                default: true
+            },
+            push: {
+                type: Boolean,
+                default: true
+            },
+            marketing: {
+                type: Boolean,
+                default: false
+            }
+        },
+        privacy: {
+            profileVisibility: {
+                type: String,
+                enum: ['public', 'private'],
+                default: 'public'
+            },
+            showEmail: {
+                type: Boolean,
+                default: false
+            }
+        },
+        appearance: {
+            language: {
+                type: String,
+                default: 'en'
+            },
+            theme: {
+                type: String,
+                enum: ['light', 'dark', 'system'],
+                default: 'system'
+            }
+        }
+    },
     isVerified: {
         type: Boolean,
         default: false
@@ -40,6 +78,35 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordExpire: {
         type: Date
+    },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorCode: {
+        type: String,
+        select: false
+    },
+    twoFactorCodeExpire: {
+        type: Date,
+        select: false
+    },
+    twoFactorChallengeToken: {
+        type: String,
+        select: false
+    },
+    twoFactorChallengeExpire: {
+        type: Date,
+        select: false
+    },
+    twoFactorAttempts: {
+        type: Number,
+        default: 0,
+        select: false
+    },
+    twoFactorLastSentAt: {
+        type: Date,
+        select: false
     }
 }, { 
     timestamps: true // This automatically adds createdAt and updatedAt fields
