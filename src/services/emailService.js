@@ -154,13 +154,56 @@ const sendEmail = async ({ to, subject, html, text, successMessage }) => {
     }
 };
 
-const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
+const sendVerificationEmail = async (userEmail, userName, verificationUrl, options = {}) => {
     const displayName = userName || 'there';
+    const subject = options.subject || 'Verify your Safe Cycling email address';
+    const preheader = options.preheader || 'Verify your Safe Cycling email address.';
+    const heading = options.heading || `Hi ${displayName}, welcome to Safe Cycling`;
+    const intro = options.intro || 'Please confirm your email address to finish setting up your account.';
+    const paragraphs = Array.isArray(options.paragraphs) && options.paragraphs.length
+        ? options.paragraphs
+        : ['Use the button below to verify your email address and activate your account.'];
+    const buttonLabel = options.buttonLabel || 'Verify email address';
+    const fallbackNote = options.fallbackNote || 'If the button does not open, copy and paste this link into your browser:';
+    const text = options.text || [
+        `Hi ${displayName},`,
+        '',
+        'Please verify your email address by opening the link below:',
+        verificationUrl,
+        '',
+        'If you did not request this, you can ignore this email.',
+    ].join('\n');
 
     return sendEmail({
         to: userEmail,
+        subject,
+        successMessage: options.successMessage || 'Verification email sent successfully.',
+        text,
+        html: buildEmailLayout({
+            preheader,
+            heading,
+            intro,
+            paragraphs,
+            buttonLabel,
+            buttonUrl: verificationUrl,
+            accentColor: '#16a34a',
+            fallbackNote,
+        }),
+    });
+};
+
+const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
+    const displayName = userName || 'there';
+
+    return sendVerificationEmail(userEmail, userName, verificationUrl, {
         subject: 'Verify your Safe Cycling email address',
-        successMessage: 'Verification email sent successfully.',
+        preheader: 'Verify your Safe Cycling email address.',
+        heading: `Hi ${displayName}, welcome to Safe Cycling`,
+        intro: 'Please confirm your email address to finish setting up your account.',
+        paragraphs: [
+            'Use the button below to verify your email address and activate your account.',
+        ],
+        buttonLabel: 'Verify email address',
         text: [
             `Hi ${displayName},`,
             '',
@@ -170,18 +213,6 @@ const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
             '',
             'If you did not create this account, you can ignore this email.',
         ].join('\n'),
-        html: buildEmailLayout({
-            preheader: 'Verify your Safe Cycling email address.',
-            heading: `Hi ${displayName}, welcome to Safe Cycling`,
-            intro: 'Please confirm your email address to finish setting up your account.',
-            paragraphs: [
-                'Use the button below to verify your email address and activate your account.',
-            ],
-            buttonLabel: 'Verify email address',
-            buttonUrl: verificationUrl,
-            accentColor: '#16a34a',
-            fallbackNote: 'If the button does not open, copy and paste this link into your browser:',
-        }),
     });
 };
 
@@ -224,4 +255,50 @@ const sendPasswordChangedEmail = async (userEmail, userName) => {
     });
 };
 
-module.exports = { sendWelcomeEmail, sendPasswordResetEmail, sendPasswordChangedEmail };
+const sendTwoFactorCodeEmail = async (userEmail, userName, verificationCode, expiresAt) => {
+    const displayName = userName || 'there';
+    const expiryLabel = expiresAt instanceof Date
+        ? expiresAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+        : 'in 10 minutes';
+
+    return sendEmail({
+        to: userEmail,
+        subject: 'Safe Cycling - Your 2-step verification code',
+        successMessage: '2-step verification email sent successfully.',
+        text: [
+            `Hi ${displayName},`,
+            '',
+            'Use this code to finish signing in to Safe Cycling:',
+            verificationCode,
+            '',
+            `This code expires at ${expiryLabel}.`,
+            'If you did not try to sign in, you can ignore this email.',
+        ].join('\n'),
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 24px 16px; background-color: #eef2f6;">
+                <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; padding: 40px 32px; color: #101828;">
+                    <p style="margin: 0 0 10px; color: #0b6bcb; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;">Safe Cycling</p>
+                    <h1 style="margin: 0 0 16px; font-size: 30px; line-height: 1.25;">Hi ${escapeHtml(displayName)}, verify this sign-in</h1>
+                    <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.7; color: #475467;">
+                        Use the verification code below to complete your Safe Cycling login. This code expires at <strong>${escapeHtml(expiryLabel)}</strong>.
+                    </p>
+                    <div style="margin: 0 0 24px; padding: 18px 20px; border-radius: 18px; background-color: #f8fafc; border: 1px solid #d0d5dd; text-align: center;">
+                        <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #475467;">Verification code</p>
+                        <p style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 0.32em; color: #101828;">${escapeHtml(verificationCode)}</p>
+                    </div>
+                    <p style="margin: 0; font-size: 14px; line-height: 1.7; color: #667085;">
+                        If you did not try to sign in, you can safely ignore this message.
+                    </p>
+                </div>
+            </div>
+        `,
+    });
+};
+
+module.exports = {
+    sendVerificationEmail,
+    sendWelcomeEmail,
+    sendPasswordResetEmail,
+    sendPasswordChangedEmail,
+    sendTwoFactorCodeEmail,
+};

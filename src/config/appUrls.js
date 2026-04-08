@@ -85,14 +85,48 @@ const getPublicFrontendUrl = () => {
     return frontendUrl && !isLocalUrl(frontendUrl) ? frontendUrl : '';
 };
 
+const normalizePath = (value, fallback = '/') => {
+    const trimmed = String(value || fallback).trim();
+
+    if (!trimmed) {
+        return fallback;
+    }
+
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+};
+
+const buildFrontendRouteUrl = (path, searchParams = {}) => {
+    const frontendUrl = getPublicFrontendUrl();
+    if (!frontendUrl) {
+        return '';
+    }
+
+    const url = new URL(`${frontendUrl}${normalizePath(path)}`);
+
+    Object.entries(searchParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            url.searchParams.set(key, String(value));
+        }
+    });
+
+    return url.toString();
+};
+
+const getVerificationSuccessRedirectUrl = () => {
+    const dashboardPath = getEnvValue('EMAIL_VERIFICATION_REDIRECT_PATH') || '/dashboard';
+    return buildFrontendRouteUrl(dashboardPath, { verified: '1' });
+};
+
 const buildVerificationUrl = (req, token) => {
     return `${getPublicApiUrl(req)}/api/auth/verify/${encodeURIComponent(token)}`;
 };
 
 module.exports = {
+    buildFrontendRouteUrl,
     buildVerificationUrl,
     getFrontendUrl,
     getPublicApiUrl,
     getPublicFrontendUrl,
+    getVerificationSuccessRedirectUrl,
     isLocalUrl,
 };

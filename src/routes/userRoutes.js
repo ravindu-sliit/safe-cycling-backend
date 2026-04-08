@@ -4,8 +4,12 @@ const router = express.Router();
 
 const {
     createUser,
+    getCurrentUser,
     getUser,
+    updateCurrentUser,
+    updateCurrentUserTwoFactor,
     updateUser,
+    changeCurrentUserEmail,
     uploadProfileImage,
     removeProfileImage,
     deleteUser,
@@ -27,10 +31,22 @@ router.post('/', optionalAuth, createUser);
 // GET / -> Admin only
 router.get('/', protect, authorize('admin'), getUsers);
 
-// GET /:id -> Any logged-in user
+// GET /me -> Current user
+router.get('/me', protect, getCurrentUser);
+
+// PATCH /me -> Current user
+router.patch('/me', protect, updateCurrentUser);
+
+// PATCH /me/two-factor -> Current user
+router.patch('/me/two-factor', protect, updateCurrentUserTwoFactor);
+
+// PATCH /me/email -> Current user
+router.patch('/me/email', protect, changeCurrentUserEmail);
+
+// GET /:id -> Self or admin
 router.get('/:id', protect, getUser);            
 
-// PUT /:id -> Any logged-in user
+// PUT /:id -> Self or admin
 router.put('/:id', protect, updateUser);         
 
 // POST /:id/profile-image -> Current user or admin
