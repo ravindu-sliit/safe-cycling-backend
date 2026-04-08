@@ -20,10 +20,13 @@ router.post(
 // POST / -> User, Admin, Organization (Any logged-in user)
 router.post('/', protect, authorize('user', 'admin', 'organization'), hazardController.createHazard);
 
-// PUT /:id -> Admin, Organization
-router.put('/:id', protect, authorize('admin', 'organization'), hazardController.updateHazard);
+// PUT /:id/like -> Any logged-in user toggles like
+router.put('/:id/like', protect, authorize('user', 'admin', 'organization'), hazardController.toggleLikeHazard);
 
-// DELETE /:id -> Admin only
-router.delete('/:id', protect, authorize('admin'), hazardController.deleteHazard);
+// PUT /:id -> Any logged-in user (user, admin, organization)
+router.put('/:id', protect, authorize('user', 'admin', 'organization'), hazardController.updateHazard);
+
+// DELETE /:id -> Users can delete own hazards; admin can delete any
+router.delete('/:id', protect, authorize('user', 'admin', 'organization'), hazardController.deleteHazard);
 
 module.exports = router;

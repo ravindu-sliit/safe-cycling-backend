@@ -1,5 +1,31 @@
 const mongoose = require('mongoose');
 
+const hazardStatusUpdateSchema = new mongoose.Schema(
+    {
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+        comment: {
+            type: String,
+            trim: true,
+            required: true,
+            maxlength: 1200,
+        },
+        imageUrl: {
+            type: String,
+            trim: true,
+            default: '',
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now,
+        },
+    },
+    { _id: true }
+);
+
 const hazardReportSchema = new mongoose.Schema(
     {
         title: {
@@ -13,6 +39,16 @@ const hazardReportSchema = new mongoose.Schema(
             required: true,
             trim: true,
             maxlength: 2000,
+        },
+        imageUrl: {
+            type: String,
+            trim: true,
+            default: '',
+        },
+        initialImageUrl: {
+            type: String,
+            trim: true,
+            default: '',
         },
         type: {
             type: String,
@@ -43,10 +79,29 @@ const hazardReportSchema = new mongoose.Schema(
                 validate: v => v.length === 2,
             },
         },
+        locationName: {
+            type: String,
+            trim: true,
+            default: '',
+            maxlength: 240,
+        },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             required: true,
+        },
+        likedBy: {
+            type: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'User',
+                },
+            ],
+            default: [],
+        },
+        statusUpdates: {
+            type: [hazardStatusUpdateSchema],
+            default: [],
         },
     },
     { timestamps: true }

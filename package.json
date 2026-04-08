@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/ravindu-sliit/safe-cycling-backend#readme",
   "dependencies": {
+    "@imagekit/nodejs": "^7.4.0",
     "and": "^0.0.3",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
