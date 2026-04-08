@@ -4,8 +4,7 @@ const { sendWelcomeEmail } = require('../services/emailService');
 const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
-
-const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
+const { buildVerificationUrl } = require('../config/appUrls');
 const PRIVILEGED_ROLES = ['admin', 'organization'];
 const UPLOAD_DIRECTORY = path.join(__dirname, '..', 'uploads');
 
@@ -109,8 +108,8 @@ const createUser = async (req, res) => {
             // 3. Attach the hashed token to the incoming data BEFORE saving
             req.body.verificationToken = hashedToken;
 
-            // 4. Create the clickable Verification URL
-            verificationUrl = `${getFrontendUrl()}/verify-email/${verificationToken}`;
+            // 4. Create the clickable verification URL
+            verificationUrl = buildVerificationUrl(req, verificationToken);
         } else {
             req.body.verificationToken = undefined;
         }
