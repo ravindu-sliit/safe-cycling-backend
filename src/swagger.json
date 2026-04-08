@@ -679,7 +679,7 @@
         "properties": {
           "title": { "type": "string", "example": "Pothole near 5th Street" },
           "description": { "type": "string", "example": "Large pothole blocking the bike lane." },
-          "type": { "type": "string", "enum": ["pothole", "debris", "lighting", "collision", "other"], "example": "pothole" },
+          "type": { "type": "string", "enum": ["pothole", "debris", "construction-zone", "roadside-hazard", "collision", "grounding", "runway-safety", "rain", "fog", "snow", "black-ice", "wildlife", "equipment-malfunction", "infrastructure-failure", "lighting", "flooding", "fallen-tree", "road-closure", "oil-spill", "other"], "example": "pothole" },
           "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
           "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
           "location": { "$ref": "#/components/schemas/HazardLocation" },
