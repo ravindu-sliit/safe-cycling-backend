@@ -8,7 +8,12 @@ const createRoute = async (routeData) => {
 
 // Get all routes
 const getAllRoutes = async () => {
-    return await Route.find();
+    return await Route.find().sort({ createdAt: -1 });
+};
+
+// Get one route by ID
+const getRouteById = async (id) => {
+    return await Route.findById(id);
 };
 
 // Update an existing route by ID
@@ -24,6 +29,7 @@ const deleteRoute = async (id) => {
 module.exports = {
     createRoute,
     getAllRoutes,
+    getRouteById,
     updateRoute,
     deleteRoute
 };

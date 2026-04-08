@@ -1,4 +1,28 @@
 const hazardService = require('../services/hazardService');
+const fs = require('fs/promises');
+const path = require('path');
+const crypto = require('crypto');
+
+const UPLOAD_DIRECTORY = path.join(__dirname, '..', 'uploads');
+
+const MIME_EXTENSION_MAP = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+};
+
+const getFileExtension = (file) => {
+    const mimetypeExtension = MIME_EXTENSION_MAP[file.mimetype];
+    if (mimetypeExtension) {
+        return mimetypeExtension;
+    }
+
+    const originalExtension = path.extname(file.originalname || '').replace('.', '').trim().toLowerCase();
+    return originalExtension || 'bin';
+};
+
+const buildPublicUploadUrl = (req, filename) => `${req.protocol}://${req.get('host')}/uploads/${filename}`;
 
 const createHazard = async (req, res, next) => {
     try{
@@ -49,10 +73,34 @@ const deleteHazard = async (req, res, next) => {
     }
 };
 
+const uploadImage = async (req, res, next) => {
+    try {
+        if (!req.file?.buffer?.length) {
+            return res.status(400).json({ success: false, message: 'Please choose an image to upload.' });
+        }
+
+        await fs.mkdir(UPLOAD_DIRECTORY, { recursive: true });
+
+        const extension = getFileExtension(req.file);
+        const filename = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}.${extension}`;
+        const absoluteFilePath = path.join(UPLOAD_DIRECTORY, filename);
+
+        await fs.writeFile(absoluteFilePath, req.file.buffer);
+
+        res.status(200).json({
+            success: true,
+            url: buildPublicUploadUrl(req, filename),
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     createHazard,
     getAllHazards,
     getHazardById,
     updateHazard,
-    deleteHazard
+    deleteHazard,
+    uploadImage
 };

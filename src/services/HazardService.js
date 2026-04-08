@@ -6,11 +6,14 @@ const createHazard = async (data) => {
 };
 
 const getAllHazards = async () => {
-    return await HazardReport.find();
+    return await HazardReport.find()
+        .populate('createdBy', 'name email role')
+        .sort({ createdAt: -1 });
 };
 
 const getHazardById = async (id) => {
-    return await HazardReport.findById(id);
+    return await HazardReport.findById(id)
+        .populate('createdBy', 'name email role');
 };
 
 const updateHazard = async (id, data) => {

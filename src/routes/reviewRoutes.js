@@ -3,6 +3,9 @@ const router = express.Router();
 const reviewController = require('../controllers/reviewController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
+// GET / -> Admin only
+router.get('/', protect, authorize('admin'), reviewController.getAllReviews);
+
 // GET /route/:routeId -> Public
 router.get('/route/:routeId', reviewController.getReviewsByRoute);
 

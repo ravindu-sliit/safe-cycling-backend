@@ -23,7 +23,12 @@ const userSchema = new mongoose.Schema({
     cyclingStyle: { 
         type: String,
         default: 'commuter'
-    },isVerified: {
+    },
+    profileImageUrl: {
+        type: String,
+        default: ''
+    },
+    isVerified: {
         type: Boolean,
         default: false
     },
