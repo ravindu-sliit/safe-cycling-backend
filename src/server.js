@@ -2,10 +2,13 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const connectDB = require('./config/db');
 
-// Load environment variables from the src/.env file beside this server entrypoint
-dotenv.config({ path: path.join(__dirname, '.env') });
+// Support both legacy src/.env and root .env locations.
+const srcEnvPath = path.join(__dirname, '.env');
+const rootEnvPath = path.join(__dirname, '..', '.env');
+dotenv.config({ path: fs.existsSync(srcEnvPath) ? srcEnvPath : rootEnvPath });
 
 // Initialize express app
 const app = express();
