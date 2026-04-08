@@ -85,11 +85,16 @@ const markEmailDeliveryError = (error, fallbackMessage) => {
     return nextError;
 };
 
+const roleSupportsCyclingStyle = (role) => {
+    const normalizedRole = String(role || 'user').trim().toLowerCase();
+    return normalizedRole === 'user';
+};
+
 const buildAuthUserPayload = (user) => ({
     id: user._id,
     name: user.name,
     email: user.email,
-    cyclingStyle: user.cyclingStyle,
+    cyclingStyle: roleSupportsCyclingStyle(user.role) ? (user.cyclingStyle || 'commuter') : '',
     profileImageUrl: user.profileImageUrl || '',
     role: user.role,
     isVerified: user.isVerified,

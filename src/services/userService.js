@@ -22,6 +22,9 @@ const normalizeUserResponse = (user) => {
     delete userResponse.twoFactorAttempts;
     delete userResponse.twoFactorLastSentAt;
     userResponse.profileImageUrl = userResponse.profileImageUrl || '';
+    userResponse.cyclingStyle = roleSupportsCyclingStyle(userResponse.role)
+        ? (userResponse.cyclingStyle || 'commuter')
+        : '';
     userResponse.twoFactorEnabled = Boolean(userResponse.twoFactorEnabled);
     userResponse.preferences = buildUserPreferences(userResponse.preferences);
 
@@ -32,8 +35,12 @@ const getUserById = async (id) => {
     return await User.findById(id).select('-password');
 };
 
-const normalizeRole = (value) => String(value || 'user').trim().toLowerCase();
+const normalizeRole = (value) => {
+    const role = String(value || 'user').trim().toLowerCase();
+    return role === 'organisation' ? 'organization' : role;
+};
 const normalizeBoolean = (value) => value === true || value === 'true';
+const roleSupportsCyclingStyle = (role) => normalizeRole(role) === 'user';
 
 const updateUser = async (id, updateData, options = {}) => {
     const user = await User.findById(id);
@@ -41,32 +48,34 @@ const updateUser = async (id, updateData, options = {}) => {
         throw new Error('User not found');
     }
 
-    const allowedFields = ['name', 'cyclingStyle'];
     const isAdmin = options.isAdmin === true;
+    const requestedRole = isAdmin && Object.prototype.hasOwnProperty.call(updateData, 'role')
+        ? normalizeRole(updateData.role)
+        : normalizeRole(user.role);
 
-    if (isAdmin) {
-        allowedFields.push('role', 'isVerified');
+    if (Object.prototype.hasOwnProperty.call(updateData, 'name') && updateData.name !== undefined) {
+        user.name = updateData.name;
     }
 
-    allowedFields.forEach((field) => {
-        if (Object.prototype.hasOwnProperty.call(updateData, field) && updateData[field] !== undefined) {
-            if (field === 'role') {
-                user.role = normalizeRole(updateData.role);
-                return;
-            }
+    if (isAdmin && Object.prototype.hasOwnProperty.call(updateData, 'role') && updateData.role !== undefined) {
+        user.role = requestedRole;
+    }
 
-            if (field === 'isVerified') {
-                user.isVerified = normalizeBoolean(updateData.isVerified);
+    if (isAdmin && Object.prototype.hasOwnProperty.call(updateData, 'isVerified') && updateData.isVerified !== undefined) {
+        user.isVerified = normalizeBoolean(updateData.isVerified);
 
-                if (user.isVerified) {
-                    user.verificationToken = undefined;
-                }
-                return;
-            }
-
-            user[field] = updateData[field];
+        if (user.isVerified) {
+            user.verificationToken = undefined;
         }
-    });
+    }
+
+    if (roleSupportsCyclingStyle(requestedRole)) {
+        if (Object.prototype.hasOwnProperty.call(updateData, 'cyclingStyle') && updateData.cyclingStyle !== undefined) {
+            user.cyclingStyle = updateData.cyclingStyle;
+        }
+    } else {
+        user.cyclingStyle = '';
+    }
 
     if (Object.prototype.hasOwnProperty.call(updateData, 'preferences')) {
         applyUserPreferencesUpdate(user, updateData.preferences);

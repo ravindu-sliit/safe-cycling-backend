@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const normalizeRole = (value) => {
+    const role = String(value || 'user').trim().toLowerCase();
+    return role === 'organisation' ? 'organization' : role;
+};
+
+const roleSupportsCyclingStyle = (role) => normalizeRole(role) === 'user';
+
 const userSchema = new mongoose.Schema({
     name: { 
         type: String, 
@@ -113,14 +120,20 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.pre('save', async function () {
-    // If the password wasn't modified, skip this
+    this.role = normalizeRole(this.role);
+
+    if (roleSupportsCyclingStyle(this.role)) {
+        this.cyclingStyle = String(this.cyclingStyle || '').trim() || 'commuter';
+    } else {
+        this.cyclingStyle = '';
+    }
+
     if (!this.isModified('password')) {
         return;
     }
-    // Generate a 'salt' and hash the password
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    
 });
 
 module.exports = mongoose.model('User', userSchema);
