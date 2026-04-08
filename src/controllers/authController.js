@@ -1,8 +1,72 @@
 // src/controllers/authController.js
 const authService = require('../services/authService');
-
 const { sendPasswordResetEmail, sendPasswordChangedEmail } = require('../services/emailService');
-const getFrontendUrl = () => process.env.FRONTEND_URL || 'http://localhost:5173';
+const { getFrontendUrl, getPublicFrontendUrl } = require('../config/appUrls');
+
+const escapeHtml = (value = '') => String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const renderVerificationPage = ({
+    title,
+    message,
+    accentColor,
+    ctaUrl = '',
+    ctaLabel = '',
+}) => {
+    const safeTitle = escapeHtml(title);
+    const safeMessage = escapeHtml(message);
+    const safeCtaUrl = escapeHtml(ctaUrl);
+    const safeCtaLabel = escapeHtml(ctaLabel);
+    const statusIcon = accentColor === '#16a34a' ? '&#10003;' : '!';
+    const ctaMarkup = safeCtaUrl && safeCtaLabel
+        ? `
+            <a href="${safeCtaUrl}" style="display: inline-block; margin-top: 24px; padding: 12px 24px; background-color: ${accentColor}; color: #ffffff; text-decoration: none; border-radius: 999px; font-weight: 600;">
+                ${safeCtaLabel}
+            </a>
+        `
+        : '';
+
+    return `
+        <!DOCTYPE html>
+        <html lang="en">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>${safeTitle}</title>
+            </head>
+            <body style="margin: 0; background-color: #f4f7fb; font-family: Arial, sans-serif; color: #1f2933;">
+                <div style="padding: 32px 16px;">
+                    <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 18px; padding: 40px 32px; text-align: center; box-shadow: 0 12px 40px rgba(15, 23, 42, 0.08);">
+                        <div style="width: 60px; height: 60px; margin: 0 auto 20px; border-radius: 50%; background-color: ${accentColor}; color: #ffffff; font-size: 28px; line-height: 60px; font-weight: 700;">
+                            <span style="font-size: 28px;">${statusIcon}</span>
+                        </div>
+                        <h1 style="margin: 0 0 12px; font-size: 28px; color: #111827;">${safeTitle}</h1>
+                        <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #4b5563;">${safeMessage}</p>
+                        ${ctaMarkup}
+                    </div>
+                </div>
+            </body>
+        </html>
+    `;
+};
+
+const sendVerificationResponse = (req, res, statusCode, payload) => {
+    if (req.accepts(['json', 'html']) === 'html') {
+        return res
+            .status(statusCode)
+            .type('html')
+            .send(renderVerificationPage(payload));
+    }
+
+    return res.status(statusCode).json({
+        success: statusCode < 400,
+        message: payload.message,
+    });
+};
 
 // POST /api/auth/login
 const login = async (req, res) => {
@@ -38,12 +102,27 @@ const verifyEmail = async (req, res) => {
 
         await authService.verifyEmailToken(token);
 
-        res.status(200).json({
-            success: true,
-            message: 'Email successfully verified. You can now log in.'
+        const frontendUrl = getPublicFrontendUrl();
+
+        return sendVerificationResponse(req, res, 200, {
+            title: 'Email verified',
+            message: 'Your Safe Cycling email address has been verified successfully. You can now log in to your account.',
+            accentColor: '#16a34a',
+            ctaUrl: frontendUrl,
+            ctaLabel: frontendUrl ? 'Open Safe Cycling' : '',
         });
     } catch (error) {
-        res.status(400).json({ success: false, message: error.message });
+        const friendlyMessage = error.message === 'Invalid or expired verification token'
+            ? 'This verification link is invalid, expired, or has already been used.'
+            : error.message;
+
+        return sendVerificationResponse(req, res, 400, {
+            title: 'Verification failed',
+            message: friendlyMessage,
+            accentColor: '#dc2626',
+            ctaUrl: '',
+            ctaLabel: '',
+        });
     }
 };
 
