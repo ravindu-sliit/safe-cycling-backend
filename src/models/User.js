@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const normalizeRole = (value) => {
+    const role = String(value || 'user').trim().toLowerCase();
+    return role === 'organisation' ? 'organization' : role;
+};
+
+const roleSupportsCyclingStyle = (role) => normalizeRole(role) === 'user';
+
 const userSchema = new mongoose.Schema({
     name: { 
         type: String, 
@@ -28,6 +35,44 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    preferences: {
+        notifications: {
+            email: {
+                type: Boolean,
+                default: true
+            },
+            push: {
+                type: Boolean,
+                default: true
+            },
+            marketing: {
+                type: Boolean,
+                default: false
+            }
+        },
+        privacy: {
+            profileVisibility: {
+                type: String,
+                enum: ['public', 'private'],
+                default: 'public'
+            },
+            showEmail: {
+                type: Boolean,
+                default: false
+            }
+        },
+        appearance: {
+            language: {
+                type: String,
+                default: 'en'
+            },
+            theme: {
+                type: String,
+                enum: ['light', 'dark', 'system'],
+                default: 'system'
+            }
+        }
+    },
     isVerified: {
         type: Boolean,
         default: false
@@ -40,20 +85,55 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordExpire: {
         type: Date
+    },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorCode: {
+        type: String,
+        select: false
+    },
+    twoFactorCodeExpire: {
+        type: Date,
+        select: false
+    },
+    twoFactorChallengeToken: {
+        type: String,
+        select: false
+    },
+    twoFactorChallengeExpire: {
+        type: Date,
+        select: false
+    },
+    twoFactorAttempts: {
+        type: Number,
+        default: 0,
+        select: false
+    },
+    twoFactorLastSentAt: {
+        type: Date,
+        select: false
     }
 }, { 
     timestamps: true // This automatically adds createdAt and updatedAt fields
 });
 
 userSchema.pre('save', async function () {
-    // If the password wasn't modified, skip this
+    this.role = normalizeRole(this.role);
+
+    if (roleSupportsCyclingStyle(this.role)) {
+        this.cyclingStyle = String(this.cyclingStyle || '').trim() || 'commuter';
+    } else {
+        this.cyclingStyle = '';
+    }
+
     if (!this.isModified('password')) {
         return;
     }
-    // Generate a 'salt' and hash the password
+
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    
 });
 
 module.exports = mongoose.model('User', userSchema);

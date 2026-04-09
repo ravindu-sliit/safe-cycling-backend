@@ -46,6 +46,78 @@
         }
       }
     },
+    "/api/auth/verify-2fa": {
+      "post": {
+        "summary": "Verify a pending 2-step login challenge",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["twoFactorToken", "code"],
+                "properties": {
+                  "twoFactorToken": {
+                    "type": "string",
+                    "example": "4a7f0a2d0b1c..."
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "482193"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "2-step verification successful - returns JWT token"
+          },
+          "400": {
+            "description": "Invalid or expired 2-step challenge"
+          },
+          "401": {
+            "description": "Incorrect verification code"
+          }
+        }
+      }
+    },
+    "/api/auth/resend-2fa": {
+      "post": {
+        "summary": "Resend the email code for a pending 2-step login challenge",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["twoFactorToken"],
+                "properties": {
+                  "twoFactorToken": {
+                    "type": "string",
+                    "example": "4a7f0a2d0b1c..."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A fresh 2-step verification code was emailed"
+          },
+          "400": {
+            "description": "Invalid or expired 2-step challenge"
+          },
+          "429": {
+            "description": "Too many resend requests"
+          }
+        }
+      }
+    },
     "/api/routes": {
       "get": {
         "summary": "Get all cycling routes",
@@ -195,6 +267,49 @@
           },
           "400": {
             "description": "Bad request (missing required fields)"
+          }
+        }
+      }
+    },
+    "/api/users/me/two-factor": {
+      "patch": {
+        "summary": "Enable or disable 2-step verification for the current user",
+        "tags": ["Users"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["enabled", "currentPassword"],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "currentPassword": {
+                    "type": "string",
+                    "example": "SuperSecretPassword123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "2-step verification preference updated successfully"
+          },
+          "400": {
+            "description": "Invalid request or incorrect password"
+          },
+          "401": {
+            "description": "Not authorized"
           }
         }
       }
@@ -564,7 +679,7 @@
         "properties": {
           "title": { "type": "string", "example": "Pothole near 5th Street" },
           "description": { "type": "string", "example": "Large pothole blocking the bike lane." },
-          "type": { "type": "string", "enum": ["pothole", "debris", "lighting", "collision", "other"], "example": "pothole" },
+          "type": { "type": "string", "enum": ["pothole", "debris", "construction-zone", "roadside-hazard", "collision", "grounding", "runway-safety", "rain", "fog", "snow", "black-ice", "wildlife", "equipment-malfunction", "infrastructure-failure", "lighting", "flooding", "fallen-tree", "road-closure", "oil-spill", "other"], "example": "pothole" },
           "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
           "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
           "location": { "$ref": "#/components/schemas/HazardLocation" },
