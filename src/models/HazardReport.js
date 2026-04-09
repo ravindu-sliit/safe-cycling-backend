@@ -18,6 +18,11 @@ const hazardStatusUpdateSchema = new mongoose.Schema(
             trim: true,
             default: '',
         },
+        status: {
+            type: String,
+            enum: ['reported', 'pending', 'resolved'],
+            default: 'reported',
+        },
         createdAt: {
             type: Date,
             default: Date.now,

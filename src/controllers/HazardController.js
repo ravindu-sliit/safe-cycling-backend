@@ -4,8 +4,9 @@ const crypto = require('crypto');
 const ImageKit = require('@imagekit/nodejs');
 const { toFile } = require('@imagekit/nodejs');
 
-const COORDINATE_PRECISION = 6;
 const IMAGEKIT_UPLOAD_FOLDER = process.env.IMAGEKIT_UPLOAD_FOLDER || '/safe-cycling/hazards';
+const EARTH_RADIUS_METERS = 6371000;
+const COMMUNITY_UPDATE_MAX_DISTANCE_METERS = 30;
 
 const MIME_EXTENSION_MAP = {
     'image/jpeg': 'jpg',
@@ -59,12 +60,90 @@ const extractCoordinatePair = (location) => {
     return { latitude, longitude };
 };
 
-const normalizeCoordinate = (value) => Number(Number(value).toFixed(COORDINATE_PRECISION));
+const toRadians = (value) => (Number(value) * Math.PI) / 180;
 
-const isSameCoordinatePair = (first, second) => (
-    normalizeCoordinate(first.latitude) === normalizeCoordinate(second.latitude)
-    && normalizeCoordinate(first.longitude) === normalizeCoordinate(second.longitude)
-);
+const getDistanceInMeters = (first, second) => {
+    const latitudeDelta = toRadians(Number(second.latitude) - Number(first.latitude));
+    const longitudeDelta = toRadians(Number(second.longitude) - Number(first.longitude));
+    const firstLatitude = toRadians(Number(first.latitude));
+    const secondLatitude = toRadians(Number(second.latitude));
+
+    const haversineFactor = Math.sin(latitudeDelta / 2) ** 2
+        + Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+
+    const angularDistance = 2 * Math.atan2(Math.sqrt(haversineFactor), Math.sqrt(1 - haversineFactor));
+    return EARTH_RADIUS_METERS * angularDistance;
+};
+
+const ALLOWED_HAZARD_STATUSES = new Set(['reported', 'pending', 'resolved']);
+
+const getEntityId = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+
+    if (typeof value?.toHexString === 'function') {
+        return value.toHexString();
+    }
+
+    if (value?._id) {
+        return getEntityId(value._id);
+    }
+
+    if (typeof value?.id === 'string') {
+        return value.id;
+    }
+
+    if (typeof value?.toString === 'function') {
+        const stringValue = value.toString();
+        if (typeof stringValue === 'string' && /^[a-f0-9]{24}$/i.test(stringValue)) {
+            return stringValue;
+        }
+    }
+
+    return '';
+};
+
+const getStatusUpdatesNewestFirst = (hazard) => {
+    const updates = Array.isArray(hazard?.statusUpdates) ? hazard.statusUpdates : [];
+
+    return updates
+        .slice()
+        .sort((left, right) => new Date(right?.createdAt || 0).getTime() - new Date(left?.createdAt || 0).getTime());
+};
+
+const canManageCommunityUpdate = ({ requesterId, requesterRole, hazardCreatorId, updateOwnerId }) => {
+    if (requesterRole === 'admin') return true;
+    if (!requesterId) return false;
+    if (requesterId === hazardCreatorId) return true;
+    return requesterId === updateOwnerId;
+};
+
+const syncHazardSnapshotFromLatestUpdate = (hazard) => {
+    const updates = getStatusUpdatesNewestFirst(hazard);
+    const latestUpdate = updates[0] || null;
+
+    if (!latestUpdate) {
+        if (!hazard.imageUrl && typeof hazard.initialImageUrl === 'string') {
+            hazard.imageUrl = hazard.initialImageUrl.trim();
+        }
+
+        if (!ALLOWED_HAZARD_STATUSES.has(String(hazard.status || '').toLowerCase().trim())) {
+            hazard.status = 'reported';
+        }
+        return;
+    }
+
+    const latestStatus = String(latestUpdate?.status || '').toLowerCase().trim();
+    const latestImageUrl = String(latestUpdate?.imageUrl || '').trim();
+
+    if (ALLOWED_HAZARD_STATUSES.has(latestStatus)) {
+        hazard.status = latestStatus;
+    }
+
+    if (latestImageUrl) {
+        hazard.imageUrl = latestImageUrl;
+    }
+};
 
 const createHazard = async (req, res, next) => {
     try{
@@ -166,9 +245,11 @@ const updateHazard = async (req, res, next) => {
                 return res.status(400).json({ message: 'Hazard location is unavailable for validation.' });
             }
 
-            if (!isSameCoordinatePair(updateLocation, hazardLocation)) {
+            const measuredDistanceFromHazard = getDistanceInMeters(updateLocation, hazardLocation);
+
+            if (measuredDistanceFromHazard > COMMUNITY_UPDATE_MAX_DISTANCE_METERS) {
                 return res.status(403).json({
-                    message: 'You can post this update only when your longitude and latitude match the hazard location.',
+                    message: `You can post this update only when you are near the hazard location (within ${COMMUNITY_UPDATE_MAX_DISTANCE_METERS} meters). Measured distance: ${measuredDistanceFromHazard.toFixed(1)}m.`,
                 });
             }
 
@@ -182,19 +263,134 @@ const updateHazard = async (req, res, next) => {
                 return res.status(400).json({ message: 'Please upload the current hazard image before posting your update.' });
             }
 
+            const requestedStatus = String(req.body?.status || existingHazard?.status || 'reported').toLowerCase().trim();
+            if (!ALLOWED_HAZARD_STATUSES.has(requestedStatus)) {
+                return res.status(400).json({
+                    message: 'Hazard status must be one of reported, pending, or resolved.',
+                });
+            }
+
             const updateEntry = {
                 user: req.user?._id,
                 comment,
                 imageUrl: updateImageUrl,
+                status: requestedStatus,
                 createdAt: new Date(),
             };
 
-            const updatedHazard = await hazardService.addCommunityUpdate(req.params.id, updateEntry, updateImageUrl);
+            const updatedHazard = await hazardService.addCommunityUpdate(
+                req.params.id,
+                updateEntry,
+                updateImageUrl,
+                requestedStatus
+            );
             return res.json(updatedHazard);
         }
 
         const updated = await hazardService.updateHazard(req.params.id, req.body);
         res.json(updated);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const updateCommunityHazardUpdate = async (req, res, next) => {
+    try {
+        const hazard = await hazardService.getHazardByIdForWrite(req.params.id);
+        if (!hazard) {
+            return res.status(404).json({ message: 'Not found' });
+        }
+
+        const updateEntry = hazard.statusUpdates?.id?.(req.params.updateId);
+        if (!updateEntry) {
+            return res.status(404).json({ message: 'Hazard update entry was not found.' });
+        }
+
+        const requesterId = getEntityId(req.user?._id);
+        const requesterRole = String(req.user?.role || '').toLowerCase();
+        const hazardCreatorId = getEntityId(hazard?.createdBy);
+        const updateOwnerId = getEntityId(updateEntry?.user);
+
+        if (!canManageCommunityUpdate({ requesterId, requesterRole, hazardCreatorId, updateOwnerId })) {
+            return res.status(403).json({ message: 'You can edit only your own hazard update entries.' });
+        }
+
+        const nextComment = Object.prototype.hasOwnProperty.call(req.body || {}, 'comment')
+            ? String(req.body.comment || '').trim()
+            : String(updateEntry.comment || '').trim();
+
+        if (!nextComment) {
+            return res.status(400).json({ message: 'Please add a comment about the current hazard situation.' });
+        }
+
+        const nextStatus = Object.prototype.hasOwnProperty.call(req.body || {}, 'status')
+            ? String(req.body.status || '').toLowerCase().trim()
+            : String(updateEntry.status || hazard.status || 'reported').toLowerCase().trim();
+
+        if (!ALLOWED_HAZARD_STATUSES.has(nextStatus)) {
+            return res.status(400).json({
+                message: 'Hazard status must be one of reported, pending, or resolved.',
+            });
+        }
+
+        const nextImageUrl = Object.prototype.hasOwnProperty.call(req.body || {}, 'imageUrl')
+            ? String(req.body.imageUrl || '').trim()
+            : String(updateEntry.imageUrl || '').trim();
+
+        if (!nextImageUrl) {
+            return res.status(400).json({ message: 'Please upload the current hazard image before saving this update.' });
+        }
+
+        updateEntry.comment = nextComment;
+        updateEntry.status = nextStatus;
+        updateEntry.imageUrl = nextImageUrl;
+
+        syncHazardSnapshotFromLatestUpdate(hazard);
+
+        await hazard.save();
+
+        const refreshedHazard = await hazardService.getHazardById(req.params.id);
+        return res.json(refreshedHazard);
+    } catch (err) {
+        next(err);
+    }
+};
+
+const deleteCommunityHazardUpdate = async (req, res, next) => {
+    try {
+        const hazard = await hazardService.getHazardByIdForWrite(req.params.id);
+        if (!hazard) {
+            return res.status(404).json({ message: 'Not found' });
+        }
+
+        const updateEntry = hazard.statusUpdates?.id?.(req.params.updateId);
+        if (!updateEntry) {
+            return res.status(404).json({ message: 'Hazard update entry was not found.' });
+        }
+
+        const requesterId = getEntityId(req.user?._id);
+        const requesterRole = String(req.user?.role || '').toLowerCase();
+        const hazardCreatorId = getEntityId(hazard?.createdBy);
+        const updateOwnerId = getEntityId(updateEntry?.user);
+
+        if (!canManageCommunityUpdate({ requesterId, requesterRole, hazardCreatorId, updateOwnerId })) {
+            return res.status(403).json({ message: 'You can delete only your own hazard update entries.' });
+        }
+
+        if (typeof hazard.statusUpdates?.pull === 'function') {
+            hazard.statusUpdates.pull(updateEntry._id);
+        } else {
+            hazard.statusUpdates = (Array.isArray(hazard.statusUpdates) ? hazard.statusUpdates : []).filter(
+                (entry) => getEntityId(entry?._id) !== getEntityId(updateEntry?._id)
+            );
+        }
+
+        syncHazardSnapshotFromLatestUpdate(hazard);
+
+        await hazard.save();
+
+        const refreshedHazard = await hazardService.getHazardById(req.params.id);
+        return res.json(refreshedHazard);
     } catch (err) {
         next(err);
     }
@@ -271,6 +467,8 @@ module.exports = {
     getAllHazards,
     getHazardById,
     updateHazard,
+    updateCommunityHazardUpdate,
+    deleteCommunityHazardUpdate,
     deleteHazard,
     toggleLikeHazard,
     uploadImage

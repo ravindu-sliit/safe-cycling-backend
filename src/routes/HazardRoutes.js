@@ -26,6 +26,12 @@ router.put('/:id/like', protect, authorize('user', 'admin', 'organization'), haz
 // PUT /:id -> Any logged-in user (user, admin, organization)
 router.put('/:id', protect, authorize('user', 'admin', 'organization'), hazardController.updateHazard);
 
+// PUT /:id/updates/:updateId -> update owner, hazard owner, or admin
+router.put('/:id/updates/:updateId', protect, authorize('user', 'admin', 'organization'), hazardController.updateCommunityHazardUpdate);
+
+// DELETE /:id/updates/:updateId -> update owner, hazard owner, or admin
+router.delete('/:id/updates/:updateId', protect, authorize('user', 'admin', 'organization'), hazardController.deleteCommunityHazardUpdate);
+
 // DELETE /:id -> Users can delete own hazards; admin can delete any
 router.delete('/:id', protect, authorize('user', 'admin', 'organization'), hazardController.deleteHazard);
 
