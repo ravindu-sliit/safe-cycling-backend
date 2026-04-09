@@ -54,21 +54,15 @@ const getReviewsByRouteId = async (routeId) => {
         .sort({ createdAt: -1 });
 
     const count = reviews.length;
-    const safetyAvg = count
-        ? reviews.reduce((sum, r) => sum + r.safetyRating, 0) / count
+    const ratingAvg = count
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / count
         : 0;
-    const ecoAvg = count
-        ? reviews.reduce((sum, r) => sum + r.ecoRating, 0) / count
-        : 0;
-    const overallAvg = count ? (safetyAvg + ecoAvg) / 2 : 0;
 
     return {
         reviews,
         count,
         averages: {
-            safety: Number(safetyAvg.toFixed(2)),
-            eco: Number(ecoAvg.toFixed(2)),
-            overall: Number(overallAvg.toFixed(2))
+            rating: Number(ratingAvg.toFixed(2))
         }
     };
 };
@@ -80,21 +74,15 @@ const getAllReviews = async () => {
         .sort({ createdAt: -1 });
 
     const count = reviews.length;
-    const safetyAvg = count
-        ? reviews.reduce((sum, review) => sum + review.safetyRating, 0) / count
+    const ratingAvg = count
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / count
         : 0;
-    const ecoAvg = count
-        ? reviews.reduce((sum, review) => sum + review.ecoRating, 0) / count
-        : 0;
-    const overallAvg = count ? (safetyAvg + ecoAvg) / 2 : 0;
 
     return {
         reviews,
         count,
         averages: {
-            safety: Number(safetyAvg.toFixed(2)),
-            eco: Number(ecoAvg.toFixed(2)),
-            overall: Number(overallAvg.toFixed(2))
+            rating: Number(ratingAvg.toFixed(2))
         }
     };
 };
@@ -116,11 +104,21 @@ const deleteReview = async (id) => {
     return await Review.findByIdAndDelete(id);
 };
 
+const likeReview = async (id) => {
+    assertObjectId(id, 'id');
+    return await Review.findByIdAndUpdate(
+        id,
+        { $inc: { likes: 1 } },
+        { new: true, runValidators: true }
+    );
+};
+
 module.exports = {
     createReview,
     getAllReviews,
     getReviewsByRouteId,
     updateReview,
-    deleteReview
+    deleteReview,
+    likeReview
 };
 
