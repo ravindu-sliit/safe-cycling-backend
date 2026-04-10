@@ -112,3 +112,36 @@ Latest executed mixed-load run summary:
 - p99 response time: 9801.2 ms
 
 This indicates the API is functional under load but experiences significant timeout pressure at the current sustained traffic profile.
+
+## Deployment Report
+
+### Architecture Overview
+
+The application is deployed using a decoupled architecture on the Vercel Cloud Platform.
+
+- Frontend: React (Vite) deployed as a static site with client-side routing.
+- Backend: Node.js/Express deployed as serverless functions.
+- Database: MongoDB Atlas (cloud) connected via Mongoose.
+
+### Deployment Configurations
+
+| Component | Environment | Technology |
+| --- | --- | --- |
+| Frontend | Vercel (Production) | React + Vite |
+| Backend | Vercel (Serverless) | Node.js + Express |
+| Database | MongoDB Atlas | NoSQL Cluster |
+| Storage | ImageKit.io | CDN-enabled Media Storage |
+
+### Key Technical Implementations
+
+- Serverless routing: a vercel.json configuration maps incoming traffic to the Express entry point at src/server.js.
+- Environment variable management:
+	- Local: .env and .env.development are used for localhost iteration.
+	- Production: VITE_API_BASE_URL is configured in Vercel for frontend to backend communication.
+- CORS strategy: dynamic CORS origins are configured to allow trusted frontend domains and block unauthorized origins.
+- Case-sensitive path resolution: require/import paths were standardized to match Linux case sensitivity in production.
+
+### Live Links
+
+- Frontend: https://safe-cycling-frontend.vercel.app
+- Backend API: https://safe-cycling-backend.vercel.app/api
