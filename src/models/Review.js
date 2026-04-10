@@ -14,13 +14,7 @@ const reviewSchema = new mongoose.Schema(
             required: true,
             index: true
         },
-        safetyRating: {
-            type: Number,
-            required: true,
-            min: 1,
-            max: 5
-        },
-        ecoRating: {
+        rating: {
             type: Number,
             required: true,
             min: 1,
@@ -30,6 +24,24 @@ const reviewSchema = new mongoose.Schema(
             type: String,
             trim: true,
             maxlength: 1000
+        },
+        difficulty: {
+            type: String,
+            enum: ['Easy', 'Medium', 'Hard'],
+            required: true
+        },
+        upvotes: [{ 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User' 
+        }],
+        downvotes: [{ 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User' 
+        }],
+        distance: {
+            type: Number,
+            required: true,
+            min: 0
         }
     },
     { timestamps: true }
