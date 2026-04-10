@@ -23,6 +23,7 @@
     "@imagekit/nodejs": "^7.4.0",
     "and": "^0.0.3",
     "axios": "^1.13.5",
+    "bad-words": "^3.0.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Route = require('../models/Route');
 const User = require('../models/User');
+const assertCleanContent = require('../utils/moderator');
 
 const assertObjectId = (id, label) => {
     if (!mongoose.isValidObjectId(id)) {
@@ -16,6 +17,9 @@ const createReview = async (reviewData) => {
 
     assertObjectId(routeId, 'route');
     assertObjectId(userId, 'user');
+
+    //Check the comment for profanity before hitting the database.
+    assertCleanContent(reviewData.comment, 'comment');
 
     const [route, user] = await Promise.all([
         Route.findById(routeId),
@@ -89,6 +93,11 @@ const getAllReviews = async () => {
 
 const updateReview = async (id, updateData) => {
     assertObjectId(id, 'id');
+
+    // If the user is updating their comment, check it again!
+    if (updateData.comment) {
+        assertCleanContent(updateData.comment, 'comment');
+    }
 
     // Prevent changing ownership / relation via update endpoint
     const { route, user, ...allowed } = updateData || {};
