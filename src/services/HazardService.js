@@ -21,12 +21,16 @@ const getHazardById = async (id) => {
         .populate(HAZARD_POPULATE);
 };
 
+const getHazardByIdForWrite = async (id) => {
+    return await HazardReport.findById(id);
+};
+
 const updateHazard = async (id, data) => {
     return await HazardReport.findByIdAndUpdate(id, data, { new: true, runValidators: true })
         .populate(HAZARD_POPULATE);
 };
 
-const addCommunityUpdate = async (id, updateEntry, latestImageUrl = '') => {
+const addCommunityUpdate = async (id, updateEntry, latestImageUrl = '', nextStatus = '') => {
     const updateCommand = {
         $push: {
             statusUpdates: {
@@ -36,8 +40,18 @@ const addCommunityUpdate = async (id, updateEntry, latestImageUrl = '') => {
         },
     };
 
+    const setPayload = {};
+
     if (typeof latestImageUrl === 'string' && latestImageUrl.trim()) {
-        updateCommand.$set = { imageUrl: latestImageUrl.trim() };
+        setPayload.imageUrl = latestImageUrl.trim();
+    }
+
+    if (typeof nextStatus === 'string' && nextStatus.trim()) {
+        setPayload.status = nextStatus.trim();
+    }
+
+    if (Object.keys(setPayload).length > 0) {
+        updateCommand.$set = setPayload;
     }
 
     return await HazardReport.findByIdAndUpdate(id, updateCommand, { new: true, runValidators: true })
@@ -66,6 +80,7 @@ module.exports = {
     createHazard,
     getAllHazards,
     getHazardById,
+    getHazardByIdForWrite,
     updateHazard,
     addCommunityUpdate,
     toggleLike,

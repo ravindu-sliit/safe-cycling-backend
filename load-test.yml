@@ -1,0 +1,33 @@
+config:
+  target: "http://127.0.0.1:5000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: warm-up
+    - duration: 30
+      arrivalRate: 20
+      name: sustained-load
+  defaults:
+    headers:
+      Content-Type: application/json
+
+scenarios:
+  - name: Health and routes read traffic
+    weight: 50
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/routes"
+
+  - name: Hazards read traffic
+    weight: 30
+    flow:
+      - get:
+          url: "/api/hazards"
+
+  - name: Reviews read traffic
+    weight: 20
+    flow:
+      - get:
+          url: "/api/reviews/route/000000000000000000000000"

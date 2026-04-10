@@ -36,9 +36,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/reviews', reviewRoutes);
 
-// Connect to MongoDB 
-// (Commented out until you add your real URI to the .env file)
-connectDB(); 
+// Avoid side effects when imported by tests.
+if (process.env.NODE_ENV !== 'test') {
+    connectDB();
+}
 
 // A simple test route
 app.get('/', (req, res) => {
@@ -64,10 +65,14 @@ app.use((error, req, res, next) => {
     next();
 });
 
-// Define the port and start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Mailer: Gmail SMTP as ${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}`);
-    console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-});
+// Start HTTP server only outside test environment.
+if (process.env.NODE_ENV !== 'test') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        console.log(`Mailer: Gmail SMTP as ${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER}`);
+        console.log(`Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    });
+}
+
+module.exports = app;
