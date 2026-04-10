@@ -1,5 +1,5 @@
 const express = require('express');
-const hazardController = require('../controllers/hazardController');
+const hazardController = require('../controllers/HazardController');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { parseSingleImageUpload } = require('../middleware/imageUploadMiddleware');
