@@ -30,10 +30,14 @@ const reviewSchema = new mongoose.Schema(
             enum: ['Easy', 'Medium', 'Hard'],
             required: true
         },
-        likes: {
-            type: Number,
-            default: 0
-        },
+        upvotes: [{ 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User' 
+        }],
+        downvotes: [{ 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User' 
+        }],
         distance: {
             type: Number,
             required: true,

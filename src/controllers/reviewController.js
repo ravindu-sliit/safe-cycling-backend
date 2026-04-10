@@ -119,10 +119,17 @@ const deleteReview = async (req, res) => {
     }
 };
 
-// POST /api/reviews/:id/like
-const likeReview = async (req, res) => {
+// POST /api/reviews/:id/vote
+const voteOnReview = async (req, res) => {
     try {
-        const updated = await reviewService.likeReview(req.params.id);
+        const { type } = req.body; // Expecting { "type": "up" } or { "type": "down" }
+        if (!['up', 'down'].includes(type)) {
+            return res.status(400).json({ success: false, message: 'Invalid vote type' });
+        }
+
+        // Pass the review ID, the current user's ID, and the vote type
+        const updated = await reviewService.voteReview(req.params.id, req.user._id, type);
+        
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Review not found' });
         }
@@ -139,6 +146,6 @@ module.exports = {
     getReviewsByRoute,
     updateReview,
     deleteReview,
-    likeReview
+    voteOnReview
 };
 

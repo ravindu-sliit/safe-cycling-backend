@@ -15,8 +15,8 @@ router.post('/', protect, authorize('user'), reviewController.createReview);
 // PUT /:id -> User, Admin
 router.put('/:id', protect, authorize('user', 'admin'), reviewController.updateReview);
 
-// POST /:id/like -> Any authenticated user
-router.post('/:id/like', protect, reviewController.likeReview);
+// POST /:id/vote -> Any authenticated user
+router.post('/:id/vote', protect, reviewController.voteOnReview);
 
 // DELETE /:id -> Admin only
 router.delete('/:id', protect, authorize('admin'), reviewController.deleteReview);

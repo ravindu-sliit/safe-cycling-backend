@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Route = require('../models/Route');
 const User = require('../models/User');
-const assertCleanContent = require('../utils/moderator');
+const { assertCleanContent } = require('../utils/moderator');
 
 const assertObjectId = (id, label) => {
     if (!mongoose.isValidObjectId(id)) {
@@ -113,13 +113,40 @@ const deleteReview = async (id) => {
     return await Review.findByIdAndDelete(id);
 };
 
-const likeReview = async (id) => {
-    assertObjectId(id, 'id');
-    return await Review.findByIdAndUpdate(
-        id,
-        { $inc: { likes: 1 } },
-        { new: true, runValidators: true }
-    );
+const voteReview = async (reviewId, userId, voteType) => {
+    assertObjectId(reviewId, 'reviewId');
+    assertObjectId(userId, 'userId');
+
+    const review = await Review.findById(reviewId);
+    if (!review) return null;
+
+    // Convert arrays to strings for easy checking
+    const upvotes = review.upvotes.map(id => id.toString());
+    const downvotes = review.downvotes.map(id => id.toString());
+    const userStr = userId.toString();
+
+    if (voteType === 'up') {
+        if (upvotes.includes(userStr)) {
+            // User already upvoted, so toggle it off (remove vote)
+            review.upvotes = review.upvotes.filter(id => id.toString() !== userStr);
+        } else {
+            // Add to upvotes, and ensure they aren't in downvotes
+            review.upvotes.push(userId);
+            review.downvotes = review.downvotes.filter(id => id.toString() !== userStr);
+        }
+    } else if (voteType === 'down') {
+        if (downvotes.includes(userStr)) {
+            // User already downvoted, so toggle it off
+            review.downvotes = review.downvotes.filter(id => id.toString() !== userStr);
+        } else {
+            // Add to downvotes, and ensure they aren't in upvotes
+            review.downvotes.push(userId);
+            review.upvotes = review.upvotes.filter(id => id.toString() !== userStr);
+        }
+    }
+
+    await review.save();
+    return review;
 };
 
 module.exports = {
@@ -128,6 +155,6 @@ module.exports = {
     getReviewsByRouteId,
     updateReview,
     deleteReview,
-    likeReview
+    voteReview
 };
 
