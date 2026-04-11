@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
+const { getBranding } = require('./config/branding');
 
 // Load environment variables from the src/.env file beside this server entrypoint
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -18,13 +19,23 @@ const reviewRoutes = require('./routes/reviewRoutes');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
+const branding = getBranding();
+const brandedSwaggerDocument = {
+    ...swaggerDocument,
+    info: {
+        ...swaggerDocument.info,
+        title: branding.apiTitle,
+    },
+};
 
 // Middleware to parse JSON and enable CORS
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(brandedSwaggerDocument, {
+    customSiteTitle: branding.docsTitle,
+}));
 
 // Mount the routes
 app.use('/api/routes', routeRoutes);
@@ -39,7 +50,17 @@ connectDB();
 
 // A simple test route
 app.get('/', (req, res) => {
-    res.json({ message: 'Eco-friendly Cycling Route API is running!' });
+    res.json({ message: `${branding.appName} API is running!` });
+});
+
+app.get('/api/branding', (req, res) => {
+    res.json({
+        success: true,
+        data: {
+            appName: branding.appName,
+            logoUrl: branding.logoUrl,
+        },
+    });
 });
 
 app.use((error, req, res, next) => {
