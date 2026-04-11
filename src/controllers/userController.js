@@ -6,8 +6,10 @@ const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const { buildVerificationUrl } = require('../config/appUrls');
+const { getBranding } = require('../config/branding');
 const PRIVILEGED_ROLES = ['admin', 'organization'];
 const UPLOAD_DIRECTORY = path.join(__dirname, '..', 'uploads');
+const { appName } = getBranding();
 
 const MIME_EXTENSION_MAP = {
     'image/jpeg': 'jpg',
@@ -179,10 +181,10 @@ const changeCurrentUserEmail = async (req, res) => {
 
         const verificationUrl = buildVerificationUrl(req, verificationToken);
         await sendVerificationEmail(user.email, user.name, verificationUrl, {
-            subject: 'Verify your new Safe Cycling email address',
-            preheader: 'Confirm your updated Safe Cycling email address.',
+            subject: `Verify your new ${appName} email address`,
+            preheader: `Confirm your updated ${appName} email address.`,
             heading: `Hi ${user.name || 'there'}, verify your new email address`,
-            intro: 'We updated the email address on your Safe Cycling account. Please verify this new email to keep your account fully active.',
+            intro: `We updated the email address on your ${appName} account. Please verify this new email to keep your account fully active.`,
             buttonLabel: 'Verify new email address',
         });
 
