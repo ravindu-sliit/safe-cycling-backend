@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Review = require('../models/Review');
 const Route = require('../models/Route');
 const User = require('../models/User');
+const { assertCleanContent } = require('../utils/moderator');
 
 const assertObjectId = (id, label) => {
     if (!mongoose.isValidObjectId(id)) {
@@ -16,6 +17,9 @@ const createReview = async (reviewData) => {
 
     assertObjectId(routeId, 'route');
     assertObjectId(userId, 'user');
+
+    //Check the comment for profanity before hitting the database.
+    assertCleanContent(reviewData.comment, 'comment');
 
     const [route, user] = await Promise.all([
         Route.findById(routeId),
@@ -54,21 +58,15 @@ const getReviewsByRouteId = async (routeId) => {
         .sort({ createdAt: -1 });
 
     const count = reviews.length;
-    const safetyAvg = count
-        ? reviews.reduce((sum, r) => sum + r.safetyRating, 0) / count
+    const ratingAvg = count
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / count
         : 0;
-    const ecoAvg = count
-        ? reviews.reduce((sum, r) => sum + r.ecoRating, 0) / count
-        : 0;
-    const overallAvg = count ? (safetyAvg + ecoAvg) / 2 : 0;
 
     return {
         reviews,
         count,
         averages: {
-            safety: Number(safetyAvg.toFixed(2)),
-            eco: Number(ecoAvg.toFixed(2)),
-            overall: Number(overallAvg.toFixed(2))
+            rating: Number(ratingAvg.toFixed(2))
         }
     };
 };
@@ -80,27 +78,26 @@ const getAllReviews = async () => {
         .sort({ createdAt: -1 });
 
     const count = reviews.length;
-    const safetyAvg = count
-        ? reviews.reduce((sum, review) => sum + review.safetyRating, 0) / count
+    const ratingAvg = count
+        ? reviews.reduce((sum, review) => sum + review.rating, 0) / count
         : 0;
-    const ecoAvg = count
-        ? reviews.reduce((sum, review) => sum + review.ecoRating, 0) / count
-        : 0;
-    const overallAvg = count ? (safetyAvg + ecoAvg) / 2 : 0;
 
     return {
         reviews,
         count,
         averages: {
-            safety: Number(safetyAvg.toFixed(2)),
-            eco: Number(ecoAvg.toFixed(2)),
-            overall: Number(overallAvg.toFixed(2))
+            rating: Number(ratingAvg.toFixed(2))
         }
     };
 };
 
 const updateReview = async (id, updateData) => {
     assertObjectId(id, 'id');
+
+    // If the user is updating their comment, check it again!
+    if (updateData.comment) {
+        assertCleanContent(updateData.comment, 'comment');
+    }
 
     // Prevent changing ownership / relation via update endpoint
     const { route, user, ...allowed } = updateData || {};
@@ -116,11 +113,48 @@ const deleteReview = async (id) => {
     return await Review.findByIdAndDelete(id);
 };
 
+const voteReview = async (reviewId, userId, voteType) => {
+    assertObjectId(reviewId, 'reviewId');
+    assertObjectId(userId, 'userId');
+
+    const review = await Review.findById(reviewId);
+    if (!review) return null;
+
+    // Convert arrays to strings for easy checking
+    const upvotes = review.upvotes.map(id => id.toString());
+    const downvotes = review.downvotes.map(id => id.toString());
+    const userStr = userId.toString();
+
+    if (voteType === 'up') {
+        if (upvotes.includes(userStr)) {
+            // User already upvoted, so toggle it off (remove vote)
+            review.upvotes = review.upvotes.filter(id => id.toString() !== userStr);
+        } else {
+            // Add to upvotes, and ensure they aren't in downvotes
+            review.upvotes.push(userId);
+            review.downvotes = review.downvotes.filter(id => id.toString() !== userStr);
+        }
+    } else if (voteType === 'down') {
+        if (downvotes.includes(userStr)) {
+            // User already downvoted, so toggle it off
+            review.downvotes = review.downvotes.filter(id => id.toString() !== userStr);
+        } else {
+            // Add to downvotes, and ensure they aren't in upvotes
+            review.downvotes.push(userId);
+            review.upvotes = review.upvotes.filter(id => id.toString() !== userStr);
+        }
+    }
+
+    await review.save();
+    return review;
+};
+
 module.exports = {
     createReview,
     getAllReviews,
     getReviewsByRouteId,
     updateReview,
-    deleteReview
+    deleteReview,
+    voteReview
 };
 
