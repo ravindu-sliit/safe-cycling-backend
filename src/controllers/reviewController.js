@@ -1,7 +1,7 @@
 const reviewService = require('../services/reviewService');
 const Review = require('../models/Review');
 
-const ALLOWED_REVIEW_FIELDS = ['route', 'rating', 'comment', 'difficulty', 'likes', 'distance'];
+const ALLOWED_REVIEW_FIELDS = ['route', 'rating', 'comment', 'difficulty', 'distance', 'pitStops'];
 const LEGACY_RATING_FIELDS = ['ecoRating', 'safatyRating', 'safetyRating'];
 
 const sanitizeReviewPayload = (payload, { allowRoute }) => {
@@ -62,23 +62,6 @@ const getReviewsByRoute = async (req, res) => {
 // PUT /api/reviews/:id
 const updateReview = async (req, res) => {
     try {
-        const incomingPayload = req.body || {};
-        const onlyLikesUpdate = Object.keys(incomingPayload).length > 0
-            && Object.keys(incomingPayload).every((key) => key === 'likes');
-
-        if (onlyLikesUpdate) {
-            const likes = Number(incomingPayload.likes);
-            if (!Number.isFinite(likes) || likes < 0) {
-                return res.status(400).json({ success: false, message: 'likes must be a non-negative number' });
-            }
-
-            const updated = await reviewService.updateReview(req.params.id, { likes });
-            if (!updated) {
-                return res.status(404).json({ success: false, message: 'Review not found' });
-            }
-            return res.status(200).json({ success: true, data: updated });
-        }
-
         // Fetch the review to check ownership
         const review = await Review.findById(req.params.id);
         if (!review) {
@@ -95,6 +78,7 @@ const updateReview = async (req, res) => {
 
         const sanitizedBody = sanitizeReviewPayload(req.body, { allowRoute: false });
         const updated = await reviewService.updateReview(req.params.id, sanitizedBody);
+        
         if (!updated) {
             return res.status(404).json({ success: false, message: 'Review not found' });
         }
@@ -148,4 +132,3 @@ module.exports = {
     deleteReview,
     voteOnReview
 };
-
