@@ -38,6 +38,7 @@ Covered scenarios include both success and negative paths:
 - Reviews API:
 	- `POST /api/reviews` (user)
 	- `GET /api/reviews/route/:routeId` (public)
+	- `POST /api/reviews/:id/vote` (authenticated user upvote/downvote)
 	- duplicate review conflict handling
 	- `GET /api/reviews` access control (admin-only)
 - Users API:
