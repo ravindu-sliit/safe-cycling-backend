@@ -42,7 +42,19 @@ const reviewSchema = new mongoose.Schema(
             type: Number,
             required: true,
             min: 0
-        }
+        },
+        pitStops: [{
+            name: {
+                type: String,
+                trim: true
+            },
+            placeId: {
+                type: String
+            },
+            address: {
+                type: String
+            }
+        }],
     },
     { timestamps: true }
 );
