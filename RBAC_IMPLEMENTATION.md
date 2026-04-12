@@ -76,6 +76,7 @@ DELETE /:id       → Admin only              (authorize('admin'))
 GET    /route/:routeId  → Public
 POST   /                → User only          (authorize('user'))
 PUT    /:id             → User, Admin        (authorize('user', 'admin')) + ownership check
+POST   /:id/vote        → Any logged-in user (protect)
 DELETE /:id             → Admin only         (authorize('admin'))
 ```
 

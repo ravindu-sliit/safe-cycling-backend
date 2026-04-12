@@ -2,20 +2,15 @@ const reviewService = require('../services/reviewService');
 const Review = require('../models/Review');
 
 const ALLOWED_REVIEW_FIELDS = ['route', 'rating', 'comment', 'difficulty', 'distance', 'pitStops'];
-const LEGACY_RATING_FIELDS = ['ecoRating', 'safatyRating', 'safetyRating'];
 
 const sanitizeReviewPayload = (payload, { allowRoute }) => {
     const input = payload || {};
-    const hasLegacyFields = LEGACY_RATING_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(input, field));
-
-    if (hasLegacyFields) {
-        const error = new Error('Use "rating" instead of eco/safety rating fields');
-        error.statusCode = 400;
-        throw error;
-    }
 
     return ALLOWED_REVIEW_FIELDS.reduce((acc, key) => {
+        // Prevent users from changing the route ID on an existing review
         if (!allowRoute && key === 'route') return acc;
+        
+        // Only allow fields that exist in our ALLOWED_REVIEW_FIELDS array
         if (Object.prototype.hasOwnProperty.call(input, key)) {
             acc[key] = input[key];
         }
