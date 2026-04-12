@@ -132,7 +132,7 @@ All endpoints below are documented in Swagger with request/response schemas and 
 | GET | `/api/reviews/route/:routeId` | Public | None | `{ success, reviews, count, averages }` |
 | POST | `/api/reviews` | Bearer (user) | `{ route, rating, difficulty, distance, comment, pitStops }` | `{ success, data }` |
 | PUT | `/api/reviews/:id` | Bearer (user/admin) | review update fields | `{ success, data }` |
-| POST | `/api/reviews/:id/vote` | Bearer | `{ type: "up"|"down" }` | `{ success, data }` |
+| POST | `/api/reviews/:id/vote` | Bearer | `{ type: "up" } or { "type": "down" }` | `{ success, data }` |
 | DELETE | `/api/reviews/:id` | Bearer (admin) | None | `{ success, message }` |
 
 ### 3.2 Request/Response Examples
