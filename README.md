@@ -179,6 +179,7 @@ At least four core business components implemented in this backend:
 	- One review per user per route enforcement.
 	- Rating, difficulty, distance, and comment moderation.
 	- Upvote/downvote interaction and route-level rating aggregates.
+	- Integrated location search for tagging community pit stops (e.g., cafes, rest areas) along routes.
 
 5. User Profile and Preferences
 	- Self-service profile updates and admin controls.
