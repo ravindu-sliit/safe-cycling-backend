@@ -1,4 +1,4 @@
-const hazardService = require('../services/hazardService');
+const hazardService = require('../services/HazardService');
 const path = require('path');
 const crypto = require('crypto');
 const ImageKit = require('@imagekit/nodejs');

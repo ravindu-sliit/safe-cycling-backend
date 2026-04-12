@@ -1,105 +1,203 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Safe Cycling Route Mapping API",
-    "version": "1.0.0",
-    "description": "API documentation for the Eco-friendly Community-led platform."
+    "title": "Safe Cycling Backend API",
+    "version": "1.1.0",
+    "description": "OpenAPI documentation for the Safe Cycling backend services."
   },
   "servers": [
     {
       "url": "http://localhost:5000",
-      "description": "Local Development Server"
+      "description": "Local development"
+    },
+    {
+      "url": "https://safe-cycling-backend.vercel.app",
+      "description": "Production"
     }
   ],
-  "paths": {"/api/auth/login": {
-      "post": {
-        "summary": "Log in a user and get a JWT token",
-        "tags": ["Authentication"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["email", "password"],
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "example": "test@safecycling.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "example": "SuperSecretPassword123"
+  "tags": [
+    { "name": "Health" },
+    { "name": "Authentication" },
+    { "name": "Routes" },
+    { "name": "Hazards" },
+    { "name": "Users" },
+    { "name": "Reviews" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Service health check",
+        "responses": {
+          "200": {
+            "description": "Service available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Eco-friendly Cycling Route API is running!" }
                   }
                 }
               }
             }
           }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log in and receive JWT or 2FA challenge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
         },
         "responses": {
           "200": {
-            "description": "Login successful - returns JWT token"
+            "description": "Login success or 2FA required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LoginResponse" }
+              }
+            }
           },
           "401": {
-            "description": "Invalid email or password"
+            "description": "Invalid credentials or unverified account",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
           }
         }
       }
     },
     "/api/auth/verify-2fa": {
       "post": {
-        "summary": "Verify a pending 2-step login challenge",
         "tags": ["Authentication"],
+        "summary": "Verify 2FA challenge",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["twoFactorToken", "code"],
-                "properties": {
-                  "twoFactorToken": {
-                    "type": "string",
-                    "example": "4a7f0a2d0b1c..."
-                  },
-                  "code": {
-                    "type": "string",
-                    "example": "482193"
-                  }
-                }
-              }
+              "schema": { "$ref": "#/components/schemas/VerifyTwoFactorRequest" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "2-step verification successful - returns JWT token"
+            "description": "2FA verified and JWT issued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthSuccessResponse" }
+              }
+            }
           },
           "400": {
-            "description": "Invalid or expired 2-step challenge"
+            "description": "Invalid/expired challenge",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
           },
           "401": {
-            "description": "Incorrect verification code"
+            "description": "Wrong code",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
           }
         }
       }
     },
     "/api/auth/resend-2fa": {
       "post": {
-        "summary": "Resend the email code for a pending 2-step login challenge",
         "tags": ["Authentication"],
+        "summary": "Resend 2FA code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResendTwoFactorRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code resent",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TwoFactorResendResponse" }
+              }
+            }
+          },
+          "429": {
+            "description": "Resend cooldown active",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/verify/{token}": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Verify user email",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verified (JSON or HTML response)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              },
+              "text/html": {
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid/expired verification token"
+          }
+        }
+      }
+    },
+    "/api/auth/forgotpassword": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Send password reset email",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["twoFactorToken"],
+                "required": ["email"],
                 "properties": {
-                  "twoFactorToken": {
-                    "type": "string",
-                    "example": "4a7f0a2d0b1c..."
-                  }
+                  "email": { "type": "string", "example": "user@example.com" }
                 }
               }
             }
@@ -107,395 +205,243 @@
         },
         "responses": {
           "200": {
-            "description": "A fresh 2-step verification code was emailed"
+            "description": "Reset email sent",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
+          },
+          "404": {
+            "description": "Email not registered",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/resend-verification": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Resend email verification link",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": { "type": "string", "example": "user@example.com" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resend attempted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/change-password": {
+      "patch": {
+        "tags": ["Authentication"],
+        "summary": "Change current user password",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": { "type": "string" },
+                  "newPassword": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/auth/resetpassword/{token}": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Redirect to frontend reset password page",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to frontend reset URL"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Reset password using token",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["password"],
+                "properties": {
+                  "password": { "type": "string", "example": "NewPassword123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset complete",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
           },
           "400": {
-            "description": "Invalid or expired 2-step challenge"
-          },
-          "429": {
-            "description": "Too many resend requests"
+            "description": "Invalid/expired token"
           }
         }
       }
     },
     "/api/routes": {
       "get": {
-        "summary": "Get all cycling routes",
         "tags": ["Routes"],
+        "summary": "Get all routes",
         "responses": {
           "200": {
-            "description": "A list of cycling routes",
+            "description": "Route list",
             "content": {
               "application/json": {
-                "example": {
-                  "success": true,
-                  "count": 1,
-                  "data": [
-                    {
-                      "_id": "65d1a1b2c3d4e5f6g7h8i9j0",
-                      "title": "Colombo City Eco-Trail",
-                      "startLocation": "Viharamahadevi Park",
-                      "endLocation": "Galle Face Green",
-                      "distance": 3.5,
-                      "ecoScore": 8
-                      
-                    }
-                  ]
-                }
+                "schema": { "$ref": "#/components/schemas/RouteListResponse" }
               }
             }
           }
         }
       },
       "post": {
-        "summary": "Create a new cycling route",
         "tags": ["Routes"],
+        "summary": "Create route (distance/path computed via OpenRouteService)",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RouteInput"
-              }
+              "schema": { "$ref": "#/components/schemas/RouteInput" }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Route created successfully"
-          }
+            "description": "Route created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RouteSingleResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" }
         }
       }
     },
     "/api/routes/{id}": {
       "put": {
-        "summary": "Update an existing route",
         "tags": ["Routes"],
+        "summary": "Update route",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
-            "in": "path",
             "name": "id",
+            "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The route ID"
+            "schema": { "type": "string" }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RouteInput"
-              }
+              "schema": { "$ref": "#/components/schemas/RouteUpdateInput" }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Route updated successfully"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a route",
-        "tags": ["Routes"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The route ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Route deleted successfully"
-          }
-        }
-      }
-    },
-    "/api/users": {
-      "get": {
-        "summary": "Get all users",
-        "tags": ["Users"],
-        "responses": {
-          "200": {
-            "description": "A list of all users",
+            "description": "Route updated",
             "content": {
               "application/json": {
-                "example": {
-                  "success": true,
-                  "count": 1,
-                  "data": [
-                    {
-                      "_id": "699d2bc156ad784c44031635",
-                      "name": "Binoth Kulangana",
-                      "email": "binoth@test.com",
-                      "role": "user",
-                      "cyclingStyle": "commuter",
-                      "createdAt": "2026-02-24T04:40:33.397Z",
-                      "updatedAt": "2026-02-24T04:40:33.397Z"
-                    }
-                  ]
-                }
+                "schema": { "$ref": "#/components/schemas/RouteSingleResponse" }
               }
             }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create a new user profile",
-        "tags": ["Users"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "User created successfully"
           },
-          "400": {
-            "description": "Bad request (missing required fields)"
-          }
-        }
-      }
-    },
-    "/api/users/me/two-factor": {
-      "patch": {
-        "summary": "Enable or disable 2-step verification for the current user",
-        "tags": ["Users"],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["enabled", "currentPassword"],
-                "properties": {
-                  "enabled": {
-                    "type": "boolean",
-                    "example": true
-                  },
-                  "currentPassword": {
-                    "type": "string",
-                    "example": "SuperSecretPassword123"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "2-step verification preference updated successfully"
-          },
-          "400": {
-            "description": "Invalid request or incorrect password"
-          },
-          "401": {
-            "description": "Not authorized"
-          }
-        }
-      }
-    },
-    "/api/users/{id}": {
-      "get": {
-        "summary": "Get user profile by ID",
-        "tags": ["Users"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The user ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "User profile data retrieved"
-          },
-          "404": {
-            "description": "User not found"
-          }
-        }
-      },
-      "put": {
-        "summary": "Update user information",
-        "tags": ["Users"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The user ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserUpdateInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "User updated successfully"
-          },
-          "404": {
-            "description": "User not found"
-          }
+          "404": { "description": "Route not found" }
         }
       },
       "delete": {
-        "summary": "Delete a user profile",
-        "tags": ["Users"],
+        "tags": ["Routes"],
+        "summary": "Delete route",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
           {
-            "in": "path",
             "name": "id",
+            "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The user ID"
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
           "200": {
-            "description": "User profile removed successfully"
-          },
-          "404": {
-            "description": "User not found"
-          }
-        }
-      }
-    },
-    "/api/reviews": {
-      "post": {
-        "summary": "Submit a new review and rating for a route",
-        "tags": ["Reviews"],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewInput"
+            "description": "Route deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
               }
             }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Review created successfully"
           },
-          "409": {
-            "description": "Already reviewed this route"
-          }
-        }
-      }
-    },
-    "/api/reviews/route/{routeId}": {
-      "get": {
-        "summary": "Fetch all reviews for a particular route",
-        "tags": ["Reviews"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "routeId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The route ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Reviews for the route"
-          }
-        }
-      }
-    },
-    "/api/reviews/{id}": {
-      "put": {
-        "summary": "Edit an existing review",
-        "tags": ["Reviews"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The review ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewUpdateInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Review updated successfully"
-          },
-          "404": {
-            "description": "Review not found"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete a review",
-        "tags": ["Reviews"],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The review ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Review deleted successfully"
-          },
-          "404": {
-            "description": "Review not found"
-          }
+          "404": { "description": "Route not found" }
         }
       }
     },
@@ -552,11 +498,11 @@
     },
     "/api/hazards": {
       "get": {
-        "summary": "Get all hazard reports",
         "tags": ["Hazards"],
+        "summary": "Get all hazards",
         "responses": {
           "200": {
-            "description": "List of hazard reports",
+            "description": "Hazard list",
             "content": {
               "application/json": {
                 "schema": {
@@ -569,31 +515,86 @@
         }
       },
       "post": {
-        "summary": "Create a hazard report",
         "tags": ["Hazards"],
+        "summary": "Create hazard report",
+        "security": [{ "bearerAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+              "schema": { "$ref": "#/components/schemas/HazardCreateInput" }
             }
           }
         },
         "responses": {
-          "201": { "description": "Hazard report created" }
+          "201": {
+            "description": "Hazard created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "400": { "description": "Validation error" }
+        }
+      }
+    },
+    "/api/hazards/upload-image": {
+      "post": {
+        "tags": ["Hazards"],
+        "summary": "Upload hazard image to ImageKit",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image uploaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "url": { "type": "string", "example": "https://ik.imagekit.io/..." },
+                    "fileId": { "type": "string", "example": "67f0e1..." }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },
     "/api/hazards/{id}": {
       "get": {
-        "summary": "Get a hazard report by ID",
         "tags": ["Hazards"],
+        "summary": "Get hazard by id",
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
         ],
         "responses": {
           "200": {
-            "description": "Hazard report",
+            "description": "Hazard found",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/HazardReport" }
@@ -603,103 +604,1074 @@
           "404": { "description": "Not found" }
         }
       },
-      "patch": {
-        "summary": "Update a hazard report",
+      "put": {
         "tags": ["Hazards"],
+        "summary": "Update hazard or submit community update",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/HazardReportInput" }
+              "schema": { "$ref": "#/components/schemas/HazardUpdateInput" }
             }
           }
         },
         "responses": {
-          "200": { "description": "Hazard report updated" },
+          "200": {
+            "description": "Updated hazard",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
           "404": { "description": "Not found" }
         }
       },
       "delete": {
-        "summary": "Delete a hazard report",
         "tags": ["Hazards"],
+        "summary": "Delete hazard",
+        "security": [{ "bearerAuth": [] }],
         "parameters": [
-          { "in": "path", "name": "id", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
         ],
         "responses": {
-          "204": { "description": "Hazard report deleted" },
+          "204": {
+            "description": "Hazard deleted"
+          },
+          "403": { "description": "Forbidden" },
           "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/hazards/{id}/like": {
+      "put": {
+        "tags": ["Hazards"],
+        "summary": "Toggle like on hazard",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hazard like toggled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/hazards/{id}/updates/{updateId}": {
+      "put": {
+        "tags": ["Hazards"],
+        "summary": "Edit a community hazard update entry",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment": { "type": "string" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["reported", "pending", "resolved"]
+                  },
+                  "imageUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update edited",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Hazards"],
+        "summary": "Delete a community hazard update entry",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "updateId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update removed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HazardReport" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/api/users": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Register user (or create privileged account if admin token provided)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreateInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSingleResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden role assignment" },
+          "400": { "description": "Validation error" }
+        }
+      },
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "User list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserListResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get current user",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSingleResponse" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Update current user",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserSelfUpdateInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current user updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSingleResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me/two-factor": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Enable/disable two-factor authentication",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["enabled", "currentPassword"],
+                "properties": {
+                  "enabled": { "type": "boolean" },
+                  "currentPassword": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "2FA preference updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserMessageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me/email": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Change current user email",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "currentPassword"],
+                "properties": {
+                  "email": { "type": "string", "example": "newmail@example.com" },
+                  "currentPassword": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email updated and verification required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserMessageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get user by id (self/admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSingleResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Update user by id (self/admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserAdminUpdateInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserSingleResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Delete user by id (self/admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/api/users/{id}/profile-image": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Upload profile image (self/admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["profileImage"],
+                "properties": {
+                  "profileImage": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile image updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserMessageResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Remove profile image (self/admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile image removed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserMessageResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/api/reviews": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get all reviews (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Reviews list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewCollectionResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "Create review (user role)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewCreateInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSingleResponse" }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate review per route/user",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews/route/{routeId}": {
+      "get": {
+        "tags": ["Reviews"],
+        "summary": "Get reviews by route",
+        "parameters": [
+          {
+            "name": "routeId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Route reviews and aggregates",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewCollectionResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews/{id}": {
+      "put": {
+        "tags": ["Reviews"],
+        "summary": "Update review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReviewUpdateInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSingleResponse" }
+              }
+            }
+          },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Review not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Reviews"],
+        "summary": "Delete review (admin)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessMessageResponse" }
+              }
+            }
+          },
+          "404": { "description": "Review not found" }
+        }
+      }
+    },
+    "/api/reviews/{id}/vote": {
+      "post": {
+        "tags": ["Reviews"],
+        "summary": "Vote on review",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["up", "down"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote applied",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReviewSingleResponse" }
+              }
+            }
+          },
+          "400": { "description": "Invalid vote type" },
+          "404": { "description": "Review not found" }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
     "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Not authorized" }
+        }
+      },
+      "SuccessMessageResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Operation successful" }
+        }
+      },
+      "GeoPoint": {
+        "type": "object",
+        "required": ["coordinates"],
+        "properties": {
+          "type": { "type": "string", "enum": ["Point"], "example": "Point" },
+          "coordinates": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "type": "number" },
+            "example": [79.9192, 6.9006]
+          },
+          "address": { "type": "string", "example": "Diyatha Uyana, Battaramulla" }
+        }
+      },
+      "PathCoordinate": {
+        "type": "object",
+        "properties": {
+          "lng": { "type": "number", "example": 79.9192 },
+          "lat": { "type": "number", "example": 6.9006 }
+        }
+      },
+      "Route": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "67f31f7f131b307ec9ecf9d1" },
+          "title": { "type": "string", "example": "Wetland Nature Trail" },
+          "startLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "endLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "pathCoordinates": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PathCoordinate" }
+          },
+          "distance": { "type": "number", "example": 4.2 },
+          "ecoScore": { "type": "number", "minimum": 1, "maximum": 10, "example": 9 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
       "RouteInput": {
         "type": "object",
         "required": ["title", "startLocation", "endLocation", "ecoScore"],
         "properties": {
-          "title": { "type": "string", "example": "Wetland Nature Trail" },
-          "startLocation": {
-            "type": "object",
-            "required": ["coordinates", "address"],
-            "properties": {
-              "coordinates": {
-                "type": "array",
-                "items": { "type": "number" },
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [79.9192, 6.9006]
-              },
-              "address": { "type": "string", "example": "Diyatha Uyana, Battaramulla" }
-            }
-          },
-          "endLocation": {
-            "type": "object",
-            "required": ["coordinates", "address"],
-            "properties": {
-              "coordinates": {
-                "type": "array",
-                "items": { "type": "number" },
-                "minItems": 2,
-                "maxItems": 2,
-                "example": [79.9075, 6.8905]
-              },
-              "address": { "type": "string", "example": "Beddagana Wetland Park" }
-            }
-          },
-          "ecoScore": { "type": "number", "example": 10 }
+          "title": { "type": "string" },
+          "startLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "endLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "ecoScore": { "type": "number", "minimum": 1, "maximum": 10 }
         }
       },
-      "UserInput": {
+      "RouteUpdateInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "startLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "endLocation": { "$ref": "#/components/schemas/GeoPoint" },
+          "ecoScore": { "type": "number", "minimum": 1, "maximum": 10 }
+        }
+      },
+      "RouteSingleResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "$ref": "#/components/schemas/Route" }
+        }
+      },
+      "RouteListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "count": { "type": "number", "example": 1 },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Route" }
+          }
+        }
+      },
+      "HazardStatusUpdate": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "user": { "type": "string" },
+          "comment": { "type": "string" },
+          "imageUrl": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["reported", "pending", "resolved"]
+          },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HazardReport": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "imageUrl": { "type": "string" },
+          "initialImageUrl": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "pothole",
+              "debris",
+              "construction-zone",
+              "roadside-hazard",
+              "collision",
+              "grounding",
+              "runway-safety",
+              "rain",
+              "fog",
+              "snow",
+              "black-ice",
+              "wildlife",
+              "equipment-malfunction",
+              "infrastructure-failure",
+              "lighting",
+              "flooding",
+              "fallen-tree",
+              "road-closure",
+              "oil-spill",
+              "other"
+            ]
+          },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "status": { "type": "string", "enum": ["reported", "pending", "resolved"] },
+          "location": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "enum": ["Point"] },
+              "coordinates": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": { "type": "number" }
+              }
+            }
+          },
+          "locationName": { "type": "string" },
+          "createdBy": { "type": "string" },
+          "likedBy": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "statusUpdates": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/HazardStatusUpdate" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HazardCreateInput": {
+        "type": "object",
+        "required": ["title", "description", "type", "location"],
+        "properties": {
+          "title": { "type": "string", "example": "Pothole near 5th Street" },
+          "description": { "type": "string", "example": "Large pothole blocking bike lane." },
+          "type": {
+            "type": "string",
+            "enum": [
+              "pothole",
+              "debris",
+              "construction-zone",
+              "roadside-hazard",
+              "collision",
+              "grounding",
+              "runway-safety",
+              "rain",
+              "fog",
+              "snow",
+              "black-ice",
+              "wildlife",
+              "equipment-malfunction",
+              "infrastructure-failure",
+              "lighting",
+              "flooding",
+              "fallen-tree",
+              "road-closure",
+              "oil-spill",
+              "other"
+            ],
+            "example": "pothole"
+          },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
+          "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
+          "location": {
+            "type": "object",
+            "required": ["coordinates"],
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" },
+                "example": [79.8612, 6.9271]
+              }
+            }
+          },
+          "locationName": { "type": "string", "example": "5th Street" },
+          "imageUrl": { "type": "string", "example": "https://ik.imagekit.io/..." }
+        }
+      },
+      "HazardUpdateInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string" },
+          "severity": { "type": "string", "enum": ["low", "medium", "high"] },
+          "status": { "type": "string", "enum": ["reported", "pending", "resolved"] },
+          "location": {
+            "type": "object",
+            "properties": {
+              "coordinates": {
+                "type": "array",
+                "items": { "type": "number" }
+              }
+            }
+          },
+          "locationName": { "type": "string" },
+          "comment": { "type": "string" },
+          "imageUrl": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string", "enum": ["user", "admin", "organization"] },
+          "cyclingStyle": { "type": "string" },
+          "profileImageUrl": { "type": "string" },
+          "isVerified": { "type": "boolean" },
+          "twoFactorEnabled": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserCreateInput": {
         "type": "object",
         "required": ["name", "email", "password"],
         "properties": {
-          "name": { "type": "string", "example": "Binoth Kulangana" },
-          "email": { "type": "string", "example": "binoth@test.com" },
-          "password": { "type": "string", "example": "securepassword123" },
-          "role": { "type": "string", "example": "user" },
-          "cyclingStyle": { "type": "string", "example": "commuter" }
+          "name": { "type": "string", "example": "Jane Rider" },
+          "email": { "type": "string", "example": "jane@example.com" },
+          "password": { "type": "string", "example": "StrongPassword123" },
+          "role": { "type": "string", "enum": ["user", "admin", "organization"], "example": "user" },
+          "cyclingStyle": { "type": "string", "example": "commuter" },
+          "isVerified": { "type": "boolean", "example": false }
         }
       },
-      "UserUpdateInput": {
+      "UserSelfUpdateInput": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "example": "Binoth Kulangana" },
-          "cyclingStyle": { "type": "string", "example": "fitness" }
+          "name": { "type": "string" },
+          "cyclingStyle": { "type": "string" },
+          "preferences": { "type": "object" }
         }
       },
-      "ReviewInput": {
+      "UserAdminUpdateInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string", "enum": ["user", "admin", "organization"] },
+          "cyclingStyle": { "type": "string" },
+          "isVerified": { "type": "boolean" },
+          "preferences": { "type": "object" }
+        }
+      },
+      "UserSingleResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "count": { "type": "number", "example": 1 },
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/User" }
+          }
+        }
+      },
+      "UserMessageResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Updated successfully." },
+          "data": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "AuthUser": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "cyclingStyle": { "type": "string" },
+          "profileImageUrl": { "type": "string" },
+          "role": { "type": "string", "enum": ["user", "admin", "organization"] },
+          "isVerified": { "type": "boolean" },
+          "twoFactorEnabled": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "example": "user@example.com" },
+          "password": { "type": "string", "example": "StrongPassword123" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Login successful" },
+          "token": { "type": "string", "example": "eyJhbGciOi..." },
+          "requiresTwoFactor": { "type": "boolean", "example": false },
+          "twoFactorToken": { "type": "string", "example": "4a7f0a2d0b1c..." },
+          "twoFactorCodeExpiresAt": { "type": "string", "format": "date-time" },
+          "user": { "$ref": "#/components/schemas/AuthUser" }
+        }
+      },
+      "VerifyTwoFactorRequest": {
+        "type": "object",
+        "required": ["twoFactorToken", "code"],
+        "properties": {
+          "twoFactorToken": { "type": "string" },
+          "code": { "type": "string", "example": "482193" }
+        }
+      },
+      "ResendTwoFactorRequest": {
+        "type": "object",
+        "required": ["twoFactorToken"],
+        "properties": {
+          "twoFactorToken": { "type": "string" }
+        }
+      },
+      "AuthSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "2-step verification successful." },
+          "token": { "type": "string", "example": "eyJhbGciOi..." },
+          "user": { "$ref": "#/components/schemas/AuthUser" }
+        }
+      },
+      "TwoFactorResendResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string" },
+          "twoFactorToken": { "type": "string" },
+          "twoFactorCodeExpiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Review": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "route": { "type": "string" },
+          "user": { "type": "string" },
+          "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+          "comment": { "type": "string" },
+          "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+          "distance": { "type": "number", "minimum": 0 },
+          "pitStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "placeId": { "type": "string" },
+                "address": { "type": "string" }
+              }
+            }
+          },
+          "upvotes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "downvotes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ReviewCreateInput": {
         "type": "object",
         "required": ["route", "rating", "difficulty", "distance"],
         "properties": {
-          "route": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j0" },
-          "rating": { "type": "number", "minimum": 1, "maximum": 5, "example": 4 },
-          "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"], "example": "Medium" },
-          "distance": { "type": "number", "example": 15.5 },
-          "comment": { "type": "string", "example": "Low traffic, shaded streets, and dedicated bike lane in most segments." },
+          "route": { "type": "string", "example": "67f31f7f131b307ec9ecf9d1" },
+          "rating": { "type": "number", "minimum": 1, "maximum": 5, "example": 5 },
+          "difficulty": {
+            "type": "string",
+            "enum": ["Easy", "Medium", "Hard"],
+            "example": "Easy"
+          },
+          "distance": { "type": "number", "minimum": 0, "example": 6.3 },
+          "comment": { "type": "string", "example": "Great route with low traffic." },
           "pitStops": {
             "type": "array",
             "items": {
@@ -716,10 +1688,10 @@
       "ReviewUpdateInput": {
         "type": "object",
         "properties": {
-          "rating": { "type": "number", "minimum": 1, "maximum": 5, "example": 5 },
-          "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"], "example": "Easy" },
-          "distance": { "type": "number", "example": 15.5 },
-          "comment": { "type": "string", "example": "A bit more traffic during peak hours, but still manageable." },
+          "rating": { "type": "number", "minimum": 1, "maximum": 5 },
+          "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+          "distance": { "type": "number", "minimum": 0 },
+          "comment": { "type": "string" },
           "pitStops": {
             "type": "array",
             "items": {
@@ -733,52 +1705,29 @@
           }
         }
       },
-      "HazardLocation": {
+      "ReviewSingleResponse": {
         "type": "object",
-        "required": ["type", "coordinates"],
         "properties": {
-          "type": { "type": "string", "enum": ["Point"], "example": "Point" },
-          "coordinates": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "$ref": "#/components/schemas/Review" }
+        }
+      },
+      "ReviewCollectionResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "reviews": {
             "type": "array",
-            "items": { "type": "number" },
-            "minItems": 2,
-            "maxItems": 2,
-            "example": [79.8612, 6.9271]
-          }
-        }
-      },
-      "HazardReportInput": {
-        "type": "object",
-        "required": ["title", "description", "type", "location", "createdBy"],
-        "properties": {
-          "title": { "type": "string", "example": "Pothole near 5th Street" },
-          "description": { "type": "string", "example": "Large pothole blocking the bike lane." },
-          "type": { "type": "string", "enum": ["pothole", "debris", "construction-zone", "roadside-hazard", "collision", "grounding", "runway-safety", "rain", "fog", "snow", "black-ice", "wildlife", "equipment-malfunction", "infrastructure-failure", "lighting", "flooding", "fallen-tree", "road-closure", "oil-spill", "other"], "example": "pothole" },
-          "severity": { "type": "string", "enum": ["low", "medium", "high"], "example": "medium" },
-          "status": { "type": "string", "enum": ["reported", "pending", "resolved"], "example": "reported" },
-          "location": { "$ref": "#/components/schemas/HazardLocation" },
-          "createdBy": { "type": "string", "description": "User ID", "example": "65d1a1b2c3d4e5f6g7h8i9j0" }
-        }
-      },
-      "HazardReport": {
-        "allOf": [
-          { "$ref": "#/components/schemas/HazardReportInput" },
-          {
+            "items": { "$ref": "#/components/schemas/Review" }
+          },
+          "count": { "type": "number", "example": 2 },
+          "averages": {
             "type": "object",
             "properties": {
-              "_id": { "type": "string", "example": "65d1a1b2c3d4e5f6g7h8i9j0" },
-              "createdAt": { "type": "string", "format": "date-time" },
-              "updatedAt": { "type": "string", "format": "date-time" }
+              "rating": { "type": "number", "example": 4.5 }
             }
           }
-        ]
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+        }
       }
     }
   }
