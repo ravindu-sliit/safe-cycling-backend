@@ -12,6 +12,8 @@ const {
     getPublicFrontendUrl,
     getVerificationSuccessRedirectUrl,
 } = require('../config/appUrls');
+const { getBranding } = require('../config/branding');
+const { appName } = getBranding();
 
 const escapeHtml = (value = '') => String(value)
     .replace(/&/g, '&amp;')
@@ -210,10 +212,10 @@ const verifyEmail = async (req, res) => {
 
         return sendVerificationResponse(req, res, 200, {
             title: 'Email verified',
-            message: 'Your Safe Cycling email address has been verified successfully. You are being redirected to your dashboard.',
+            message: `Your ${appName} email address has been verified successfully. You are being redirected to your dashboard.`,
             accentColor: '#16a34a',
             ctaUrl: frontendUrl,
-            ctaLabel: frontendUrl ? 'Open Safe Cycling' : '',
+            ctaLabel: frontendUrl ? `Open ${appName}` : '',
         });
     } catch (error) {
         const friendlyMessage = error.message === 'Invalid or expired verification token'
@@ -269,10 +271,10 @@ const resendVerification = async (req, res) => {
         if (result) {
             const verificationUrl = buildVerificationUrl(req, result.verificationToken);
             await sendVerificationEmail(result.user.email, result.user.name, verificationUrl, {
-                subject: 'Your Safe Cycling verification link',
-                preheader: 'Here is a fresh Safe Cycling verification link.',
+                subject: `Your ${appName} verification link`,
+                preheader: `Here is a fresh ${appName} verification link.`,
                 heading: `Hi ${result.user.name || 'there'}, verify your email address`,
-                intro: 'Use the button below to verify your Safe Cycling account with a fresh verification link.',
+                intro: `Use the button below to verify your ${appName} account with a fresh verification link.`,
                 buttonLabel: 'Verify email address',
                 successMessage: 'Verification email resent successfully.',
             });

@@ -69,6 +69,7 @@ afterEach(async () => {
 });
 
 describe('Review Routes API Endpoints', () => {
+  
   it('should create a review for a route', async () => {
     const route = await createRouteDoc('Negombo Ride');
     const { token } = await createTokenForRole('user');
@@ -78,26 +79,30 @@ describe('Review Routes API Endpoints', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         route: route._id.toString(),
-        safetyRating: 4,
-        ecoRating: 5,
+        rating: 4,
+        difficulty: 'Easy',
+        distance: 9.5,
         comment: 'Well marked and safe'
       });
 
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toHaveProperty('_id');
-    expect(res.body.data.safetyRating).toBe(4);
+    expect(res.body.data.rating).toBe(4);
+    expect(res.body.data.difficulty).toBe('Easy');
   });
 
   it('should return reviews publicly by route', async () => {
     const route = await createRouteDoc('Colombo Loop');
     const { user } = await createTokenForRole('user');
 
+    // Seed the database with a review using the correct modern schema
     await Review.create({
       route: route._id,
       user: user._id,
-      safetyRating: 5,
-      ecoRating: 4,
+      rating: 5,
+      difficulty: 'Medium',
+      distance: 15.2,
       comment: 'Good ride'
     });
 
@@ -113,21 +118,25 @@ describe('Review Routes API Endpoints', () => {
     const route = await createRouteDoc('Duplicate Guard Route');
     const { user, token } = await createTokenForRole('user');
 
+    // Create the first review
     await Review.create({
       route: route._id,
       user: user._id,
-      safetyRating: 3,
-      ecoRating: 3,
+      rating: 3,
+      difficulty: 'Hard',
+      distance: 20.0,
       comment: 'First review'
     });
 
+    // Attempt to post a second review to the exact same route
     const res = await request(app)
       .post('/api/reviews')
       .set('Authorization', `Bearer ${token}`)
       .send({
         route: route._id.toString(),
-        safetyRating: 4,
-        ecoRating: 4,
+        rating: 4,
+        difficulty: 'Medium',
+        distance: 20.0,
         comment: 'Duplicate review'
       });
 

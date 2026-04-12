@@ -445,6 +445,57 @@
         }
       }
     },
+    "/api/reviews/{id}/vote": {
+      "post": {
+        "summary": "Upvote or downvote a review",
+        "tags": ["Reviews"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The review ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["up", "down"],
+                    "example": "up"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Vote registered successfully"
+          },
+          "400": {
+            "description": "Invalid vote type"
+          },
+          "404": {
+            "description": "Review not found"
+          }
+        }
+      }
+    },
     "/api/hazards": {
       "get": {
         "tags": ["Hazards"],
@@ -1585,6 +1636,17 @@
           "comment": { "type": "string" },
           "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
           "distance": { "type": "number", "minimum": 0 },
+          "pitStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "placeId": { "type": "string" },
+                "address": { "type": "string" }
+              }
+            }
+          },
           "upvotes": {
             "type": "array",
             "items": { "type": "string" }
@@ -1609,7 +1671,18 @@
             "example": "Easy"
           },
           "distance": { "type": "number", "minimum": 0, "example": 6.3 },
-          "comment": { "type": "string", "example": "Great route with low traffic." }
+          "comment": { "type": "string", "example": "Great route with low traffic." },
+          "pitStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "example": "Green Leaf Cafe" },
+                "placeId": { "type": "string", "example": "osm_12345" },
+                "address": { "type": "string", "example": "123 Main St, Colombo" }
+              }
+            }
+          }
         }
       },
       "ReviewUpdateInput": {
@@ -1619,7 +1692,17 @@
           "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
           "distance": { "type": "number", "minimum": 0 },
           "comment": { "type": "string" },
-          "likes": { "type": "number", "minimum": 0 }
+          "pitStops": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "placeId": { "type": "string" },
+                "address": { "type": "string" }
+              }
+            }
+          }
         }
       },
       "ReviewSingleResponse": {

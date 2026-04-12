@@ -130,7 +130,7 @@ All endpoints below are documented in Swagger with request/response schemas and 
 | DELETE | `/api/users/:id` | Bearer (self/admin) | None | `{ success, message }` |
 | GET | `/api/reviews` | Bearer (admin) | None | `{ success, reviews, count, averages }` |
 | GET | `/api/reviews/route/:routeId` | Public | None | `{ success, reviews, count, averages }` |
-| POST | `/api/reviews` | Bearer (user) | `{ route, rating, difficulty, distance, comment }` | `{ success, data }` |
+| POST | `/api/reviews` | Bearer (user) | `{ route, rating, difficulty, distance, comment, pitStops }` | `{ success, data }` |
 | PUT | `/api/reviews/:id` | Bearer (user/admin) | review update fields | `{ success, data }` |
 | POST | `/api/reviews/:id/vote` | Bearer | `{ type: "up"|"down" }` | `{ success, data }` |
 | DELETE | `/api/reviews/:id` | Bearer (admin) | None | `{ success, message }` |

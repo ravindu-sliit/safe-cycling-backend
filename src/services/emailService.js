@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const { getBranding } = require('../config/branding');
+const { appName } = getBranding();
 
 const getEnvValue = (key) => {
     const value = process.env[key];
@@ -33,7 +35,7 @@ const getFromEmail = () => {
         throw new Error('SMTP_FROM_EMAIL is not configured.');
     }
 
-    return `Safe Cycling <${fromEmail}>`;
+    return `${appName} <${fromEmail}>`;
 };
 
 const getReplyToEmail = () => {
@@ -92,7 +94,7 @@ const buildEmailLayout = ({
                                 <tr>
                                     <td style="padding: 40px 36px 12px; text-align: center;">
                                         <p style="margin: 0; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: ${accentColor}; font-weight: 700;">
-                                            Safe Cycling
+                                            ${escapeHtml(appName)}
                                         </p>
                                         <h1 style="margin: 16px 0 12px; font-size: 30px; line-height: 1.25; color: #101828;">${safeHeading}</h1>
                                         <p style="margin: 0 0 28px; font-size: 17px; line-height: 1.6; color: #475467;">${safeIntro}</p>
@@ -156,9 +158,9 @@ const sendEmail = async ({ to, subject, html, text, successMessage }) => {
 
 const sendVerificationEmail = async (userEmail, userName, verificationUrl, options = {}) => {
     const displayName = userName || 'there';
-    const subject = options.subject || 'Verify your Safe Cycling email address';
-    const preheader = options.preheader || 'Verify your Safe Cycling email address.';
-    const heading = options.heading || `Hi ${displayName}, welcome to Safe Cycling`;
+    const subject = options.subject || `Verify your ${appName} email address`;
+    const preheader = options.preheader || `Verify your ${appName} email address.`;
+    const heading = options.heading || `Hi ${displayName}, welcome to ${appName}`;
     const intro = options.intro || 'Please confirm your email address to finish setting up your account.';
     const paragraphs = Array.isArray(options.paragraphs) && options.paragraphs.length
         ? options.paragraphs
@@ -196,9 +198,9 @@ const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
     const displayName = userName || 'there';
 
     return sendVerificationEmail(userEmail, userName, verificationUrl, {
-        subject: 'Verify your Safe Cycling email address',
-        preheader: 'Verify your Safe Cycling email address.',
-        heading: `Hi ${displayName}, welcome to Safe Cycling`,
+        subject: `Verify your ${appName} email address`,
+        preheader: `Verify your ${appName} email address.`,
+        heading: `Hi ${displayName}, welcome to ${appName}`,
         intro: 'Please confirm your email address to finish setting up your account.',
         paragraphs: [
             'Use the button below to verify your email address and activate your account.',
@@ -207,7 +209,7 @@ const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
         text: [
             `Hi ${displayName},`,
             '',
-            'Welcome to Safe Cycling.',
+            `Welcome to ${appName}.`,
             'Please verify your email address by opening the link below:',
             verificationUrl,
             '',
@@ -219,12 +221,12 @@ const sendWelcomeEmail = async (userEmail, userName, verificationUrl) => {
 const sendPasswordResetEmail = async (userEmail, userName, resetUrl) => {
     return sendEmail({
         to: userEmail,
-        subject: 'Safe Cycling - Password Reset Request',
+        subject: `${appName} - Password Reset Request`,
         successMessage: 'Password reset email sent successfully.',
         html: `
             <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #333;">Hi ${userName},</h2>
-                <p style="color: #555; font-size: 16px;">You are receiving this email because you (or someone else) requested a password reset for your Safe Cycling account.</p>
+                <p style="color: #555; font-size: 16px;">You are receiving this email because you (or someone else) requested a password reset for your ${appName} account.</p>
                 <p style="color: #555; font-size: 16px;">Please click the button below to choose a new password. <strong>This link will expire in 10 minutes.</strong></p>
                 <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0;">
                     Reset Password
@@ -238,12 +240,12 @@ const sendPasswordResetEmail = async (userEmail, userName, resetUrl) => {
 const sendPasswordChangedEmail = async (userEmail, userName) => {
     return sendEmail({
         to: userEmail,
-        subject: 'Safe Cycling - Password Changed Successfully',
+        subject: `${appName} - Password Changed Successfully`,
         successMessage: 'Password confirmation email sent successfully.',
         html: `
             <div style="font-family: Arial, sans-serif; text-align: center; padding: 20px; max-width: 600px; margin: 0 auto;">
                 <h2 style="color: #333;">Hi ${userName},</h2>
-                <p style="color: #555; font-size: 16px;">Your Safe Cycling account password has been successfully updated.</p>
+                <p style="color: #555; font-size: 16px;">Your ${appName} account password has been successfully updated.</p>
                 <p style="color: #555; font-size: 16px;">You can now log in to the app using your new password.</p>
                 <div style="margin-top: 30px; padding: 15px; background-color: #fff3cd; border-left: 5px solid #ffc107; text-align: left;">
                     <p style="font-size: 12px; color: #856404; margin: 0;">
@@ -263,12 +265,12 @@ const sendTwoFactorCodeEmail = async (userEmail, userName, verificationCode, exp
 
     return sendEmail({
         to: userEmail,
-        subject: 'Safe Cycling - Your 2-step verification code',
+        subject: `${appName} - Your 2-step verification code`,
         successMessage: '2-step verification email sent successfully.',
         text: [
             `Hi ${displayName},`,
             '',
-            'Use this code to finish signing in to Safe Cycling:',
+            `Use this code to finish signing in to ${appName}:`,
             verificationCode,
             '',
             `This code expires at ${expiryLabel}.`,
@@ -277,10 +279,10 @@ const sendTwoFactorCodeEmail = async (userEmail, userName, verificationCode, exp
         html: `
             <div style="font-family: Arial, sans-serif; padding: 24px 16px; background-color: #eef2f6;">
                 <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; padding: 40px 32px; color: #101828;">
-                    <p style="margin: 0 0 10px; color: #0b6bcb; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;">Safe Cycling</p>
+                    <p style="margin: 0 0 10px; color: #0b6bcb; font-size: 12px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;">${escapeHtml(appName)}</p>
                     <h1 style="margin: 0 0 16px; font-size: 30px; line-height: 1.25;">Hi ${escapeHtml(displayName)}, verify this sign-in</h1>
                     <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.7; color: #475467;">
-                        Use the verification code below to complete your Safe Cycling login. This code expires at <strong>${escapeHtml(expiryLabel)}</strong>.
+                        Use the verification code below to complete your ${escapeHtml(appName)} login. This code expires at <strong>${escapeHtml(expiryLabel)}</strong>.
                     </p>
                     <div style="margin: 0 0 24px; padding: 18px 20px; border-radius: 18px; background-color: #f8fafc; border: 1px solid #d0d5dd; text-align: center;">
                         <p style="margin: 0 0 10px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #475467;">Verification code</p>
